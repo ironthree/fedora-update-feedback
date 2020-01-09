@@ -1,0 +1,24 @@
+[package]
+name = "fedora-update-feedback"
+description = "provide feedback for fedora updates (inspired by fedora-easy-karma)"
+license = "MIT OR Apache-2.0"
+
+version = "0.0.1"
+edition = "2018"
+
+authors = ["Fabio Valentini <decathorpe@gmail.com>"]
+readme = "README.md"
+categories = ["command-line-utilities"]
+keywords = ["fedora", "bodhi", "updates", "feedback"]
+
+[dependencies]
+bodhi = "^0.1.6"
+dirs = "^2.0.2"
+rpassword = "^4.0.3"
+serde = { version = "^1.0.104", features = ["derive"] }
+toml = "^0.5.5"
+
+[profile.release]
+codegen-units = 1
+lto = true
+
