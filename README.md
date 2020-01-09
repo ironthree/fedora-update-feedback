@@ -2,12 +2,19 @@
 
 This project is inspired by [fedora-easy-karma][f-e-k], but with more features.
 
-It allows submitting bug and testcase feedback in addition to providing a comment and karma.
+[f-e-k]: https://pagure.io/fedora-easy-karma
 
-Like `fedora-update-notifier`, it expects a config file at `~/.config/fedora.toml`, with at least the following
-contents:
+It allows submitting bug and testcase feedback in addition to providing a
+comment and karma (providing test case feedback is a work in progress and is
+blocked by a [bodhi server issue][bodhi-issue]).
+
+[bodhi-issue]: https://github.com/fedora-infra/bodhi/issues/3888
+
+Like `fedora-update-notifier`, it expects a config file at
+`~/.config/fedora.toml`, with at least the following contents:
 
 ```toml
 [FAS]
 username = "USERNAME"
 ```
+
