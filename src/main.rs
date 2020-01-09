@@ -393,17 +393,33 @@ fn main() -> Result<(), String> {
         },
     };
 
-    let query = bodhi::query::UpdateQuery::new()
+    let testing_query = bodhi::query::UpdateQuery::new()
         .releases(release)
         .content_type(ContentType::RPM)
         .status(UpdateStatus::Testing);
 
-    let updates = match bodhi.query(&query) {
+    let testing_updates = match bodhi.query(&testing_query) {
         Ok(updates) => updates,
         Err(error) => {
             return Err(format!("{}", error));
         },
     };
+
+    let pending_query = bodhi::query::UpdateQuery::new()
+        .releases(release)
+        .content_type(ContentType::RPM)
+        .status(UpdateStatus::Pending);
+
+    let pending_updates = match bodhi.query(&pending_query) {
+        Ok(updates) => updates,
+        Err(error) => {
+            return Err(format!("{}", error));
+        },
+    };
+
+    let mut updates: Vec<Update> = Vec::new();
+    updates.extend(testing_updates);
+    updates.extend(pending_updates);
 
     // filter out updates created by the current user
     let updates: Vec<Update> = updates
