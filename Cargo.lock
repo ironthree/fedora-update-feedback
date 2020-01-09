@@ -80,9 +80,9 @@ dependencies = [
 
 [[package]]
 name = "bodhi"
-version = "0.1.6"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f228f4bed340a692368a2fd6534833d6212f5471b58a7e73d9975f200920d53"
+checksum = "7e472a75107f0c0372f8c1dcacb89cba96298d17288b03b9776fee0e01236002"
 dependencies = [
  "chrono",
  "failure",
@@ -302,6 +302,7 @@ dependencies = [
  "bodhi",
  "dirs",
  "rpassword",
+ "rustyline",
  "serde",
  "toml",
 ]
@@ -497,10 +498,11 @@ dependencies = [
 
 [[package]]
 name = "hyper-tls"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab58a31960b2f78c5c24cf255216789863754438a1e48849a956846f899e762e"
+checksum = "3adcd308402b9553630734e9c36b77a7e48b3821251ca2493e8cd596763aafaa"
 dependencies = [
+ "bytes",
  "hyper",
  "native-tls",
  "tokio",
@@ -679,6 +681,19 @@ dependencies = [
  "cfg-if",
  "libc",
  "winapi 0.3.8",
+]
+
+[[package]]
+name = "nix"
+version = "0.14.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c722bee1037d430d0f8e687bbdbf222f27cc6e4e68d5caf630857bb2b6dbdce"
+dependencies = [
+ "bitflags",
+ "cc",
+ "cfg-if",
+ "libc",
+ "void",
 ]
 
 [[package]]
@@ -1016,18 +1031,18 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.3.1"
+version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc220bd33bdce8f093101afe22a037b8eb0e5af33592e6a9caafff0d4cb81cbd"
+checksum = "e132dca7dca8da635b3bd4a42abf254bcf8b2c0658e883fed61cefb87b3635ab"
 dependencies = [
  "regex-syntax",
 ]
 
 [[package]]
 name = "regex-syntax"
-version = "0.6.12"
+version = "0.6.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11a7e20d1cce64ef2fed88b66d347f88bd9babb82845b2b858f3edbf59a4f716"
+checksum = "e734e891f5b408a29efbf8309e656876276f49ab6a6ac208600b4419bd893d90"
 
 [[package]]
 name = "remove_dir_all"
@@ -1040,9 +1055,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.10.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "03c6cbd2bc1c1cb7052dbe30f4a70cf65811967c800f2dfbb2e6036dc9ee2553"
+checksum = "c0e798e19e258bf6c30a304622e3e9ac820e483b06a1857a026e1f109b113fe4"
 dependencies = [
  "base64 0.11.0",
  "bytes",
@@ -1110,6 +1125,24 @@ name = "rustc-demangle"
 version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4c691c0e608126e00913e33f0ccf3727d5fc84573623b8d65b2df340b5201783"
+
+[[package]]
+name = "rustyline"
+version = "6.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "de64be8eecbe428b6924f1d8430369a01719fbb182c26fa431ddbb0a95f5315d"
+dependencies = [
+ "cfg-if",
+ "dirs",
+ "libc",
+ "log",
+ "memchr",
+ "nix",
+ "unicode-segmentation",
+ "unicode-width",
+ "utf8parse",
+ "winapi 0.3.8",
+]
 
 [[package]]
 name = "ryu"
@@ -1374,6 +1407,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e83e153d1053cbb5a118eeff7fd5be06ed99153f00dbcd8ae310c5fb2b22edc0"
 
 [[package]]
+name = "unicode-width"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "caaa9d531767d1ff2150b9332433f32a24622147e5ebb1f26409d5da67afd479"
+
+[[package]]
 name = "unicode-xid"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1402,6 +1441,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "utf8parse"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8772a4ccbb4e89959023bc5b7cb8623a795caa7092d99f3aa9501b9484d4557d"
+
+[[package]]
 name = "vcpkg"
 version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1418,6 +1463,12 @@ name = "version_check"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "078775d0255232fb988e6fccf26ddc9d1ac274299aaedcedce21c6f72cc533ce"
+
+[[package]]
+name = "void"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
 
 [[package]]
 name = "want"

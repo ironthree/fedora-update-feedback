@@ -208,13 +208,14 @@ fn get_installed() -> Result<Vec<NVR>, String> {
     Ok(packages)
 }
 
-enum Feedback {
+enum Feedback<'a> {
+    Cancel,
     Skip,
     Values {
         comment: Option<String>,
         karma: Karma,
         bug_feedback: Vec<(u32, Karma)>,
-        // testcase_feedback: Vec<(u32, Karma)>, TODO
+        testcase_feedback: Vec<(&'a str, Karma)>,
     },
 }
 
@@ -238,7 +239,7 @@ fn str_to_karma(string: &str) -> Option<Karma> {
     }
 }
 
-fn ask_feedback(update: &Update) -> Feedback {
+fn ask_feedback<'a>(rl: &mut rustyline::Editor<()>, update: &'a Update) -> Result<Feedback<'a>, String> {
     print_update(update);
 
     let skip = match get_input("Skip (Y/n)").as_str() {
@@ -248,10 +249,24 @@ fn ask_feedback(update: &Update) -> Feedback {
     };
 
     if skip {
-        return Feedback::Skip;
+        return Ok(Feedback::Skip);
     };
 
-    let comment = match get_input("Comment").trim() {
+    let mut comment_lines: Vec<String> = Vec::new();
+
+    loop {
+        match rl.readline("Comment: ") {
+            Ok(line) => {
+                rl.add_history_entry(&line);
+                comment_lines.push(line);
+            },
+            Err(rustyline::error::ReadlineError::Eof) => break,
+            Err(rustyline::error::ReadlineError::Interrupted) => return Ok(Feedback::Cancel),
+            Err(error) => return Err(error.to_string()),
+        }
+    }
+
+    let comment = match comment_lines.join("\n").trim() {
         "" => None,
         x => Some(x.to_string()),
     };
@@ -260,7 +275,7 @@ fn ask_feedback(update: &Update) -> Feedback {
 
     if let (None, None) = (&comment, &karma) {
         println!("Provided neither comment nor karma, skipping this update.");
-        return Feedback::Skip;
+        return Ok(Feedback::Skip);
     };
 
     let karma = match karma {
@@ -278,48 +293,33 @@ fn ask_feedback(update: &Update) -> Feedback {
         println!("{}: {}", bug.bug_id, bug_title);
         if let Some(input) = str_to_karma(get_input("Bug Feedback (+1, 0, -1)").as_str()) {
             bug_feedback.push((bug.bug_id, input));
+        } else {
+            println!("Skipped bug: {}", bug.bug_id);
         };
     }
 
-    /* TODO
-    let mut testcase_feedback: Vec<(u32, Karma)> = Vec::new();
+    let mut testcase_feedback: Vec<(&str, Karma)> = Vec::new();
     if let Some(test_cases) = &update.test_cases {
         for test_case in test_cases {
-            println!("{}", test_case);
-            testcase_feedback.push((test_case.testcase_id, str_to_karma(get_input("Test Case Feedback (+1, 0, -1)").as_str())));
+            println!("{}", &test_case.name);
+
+            if let Some(input) = str_to_karma(get_input("Test Case Feedback (+1, 0, -1)").as_str()) {
+                testcase_feedback.push((&test_case.name, input));
+            } else {
+                println!("Skipped test case: {}", &test_case.name);
+            };
         }
     }
-    */
 
-    Feedback::Values {
+    Ok(Feedback::Values {
         comment,
         karma,
         bug_feedback,
-        // testcase_feedback, TODO
-    }
+        testcase_feedback,
+    })
 }
 
 fn print_update(update: &Update) {
-    let bugs = if !update.bugs.is_empty() {
-        update
-            .bugs
-            .iter()
-            .map(|b| b.bug_id.to_string())
-            .collect::<Vec<String>>()
-            .join(", ")
-    } else {
-        "(None)".to_string()
-    };
-
-    let test_cases = match &update.test_cases {
-        Some(tc) if !tc.is_empty() => tc
-            .iter()
-            .map(|tc| format!("\"{}\"", &tc.name))
-            .collect::<Vec<String>>()
-            .join(", "),
-        _ => "(None)".to_string(),
-    };
-
     let date = match &update.date_submitted {
         Some(date) => date.to_string(),
         None => "(None)".to_string(),
@@ -350,17 +350,57 @@ fn print_update(update: &Update) {
     println!("{}", update.notes);
     println!();
 
-    println!("URL:            https://bodhi.fedoraproject.org/updates/{}", &update.alias);
+    println!(
+        "URL:            https://bodhi.fedoraproject.org/updates/{}",
+        &update.alias
+    );
     println!("Update type:    {}", update.update_type);
     println!("Submitted:      {}", date);
     println!("Submitter:      {}", update.user.name);
     println!("Karma:          {}", karma);
     println!("Stable karma:   {}", stable_karma);
     println!("Unstable karma: {}", unstable_karma);
-    println!("Bugs:           {}", bugs);
-    println!("Test cases:     {}", test_cases);
 
     println!();
+
+    if !update.bugs.is_empty() {
+        let bugs: Vec<(u32, &str)> = update
+            .bugs
+            .iter()
+            .map(|b| {
+                (
+                    b.bug_id,
+                    match &b.title {
+                        Some(title) => title.as_str(),
+                        None => "(None)",
+                    },
+                )
+            })
+            .collect();
+
+        println!("Bugs:");
+
+        for (id, title) in bugs {
+            println!("- {}: {}", id, title);
+        }
+
+        println!();
+    };
+
+    match &update.test_cases {
+        Some(ts) if !ts.is_empty() => {
+            let test_cases: Vec<&str> = ts.iter().map(|t| t.name.as_str()).collect();
+
+            println!("Test cases:");
+
+            for name in test_cases {
+                println!("- {}", name);
+            }
+
+            println!();
+        },
+        _ => {},
+    };
 
     println!("Builds:");
     for build in &update.builds {
@@ -381,9 +421,11 @@ fn main() -> Result<(), String> {
     let release = get_release()?;
 
     // query DNF for installed packages
+    println!("Querying dnf for installed packages ...");
     let packages = get_installed()?;
 
     // query bodhi for packages in updates-testing
+    println!("Authenticating with bodhi ...");
     let bodhi = match BodhiServiceBuilder::default()
         .authentication(&username, &password)
         .build()
@@ -394,6 +436,7 @@ fn main() -> Result<(), String> {
         },
     };
 
+    println!("Querying bodhi for updates ...");
     let testing_query = bodhi::query::UpdateQuery::new()
         .releases(release)
         .content_type(ContentType::RPM)
@@ -480,10 +523,16 @@ fn main() -> Result<(), String> {
     // sort updates by submission date
     installed_updates.sort_by(|a, b| a.date_submitted.cmp(&b.date_submitted));
 
+    let mut rl = rustyline::Editor::<()>::new();
+
     for update in installed_updates {
-        let feedback = ask_feedback(update);
+        let feedback = ask_feedback(&mut rl, update)?;
 
         match feedback {
+            Feedback::Cancel => {
+                println!("Cancelling.");
+                break;
+            },
             Feedback::Skip => {
                 println!("Skipping.");
                 continue;
@@ -492,7 +541,7 @@ fn main() -> Result<(), String> {
                 comment,
                 karma,
                 bug_feedback,
-                // testcase_feedback,
+                testcase_feedback,
             } => {
                 match (&comment, karma) {
                     (None, Karma::Neutral) => {
@@ -504,25 +553,32 @@ fn main() -> Result<(), String> {
 
                 let mut builder = CommentBuilder::new(&update.alias).karma(karma);
 
-                match &comment {
-                    Some(text) => builder = builder.text(text),
-                    None => {},
+                if let Some(text) = &comment {
+                    builder = builder.text(text);
                 };
 
                 for (id, karma) in bug_feedback {
                     builder = builder.bug_feedback(id, karma);
                 }
 
-                /*
-                for (id, karma) in testcase_feedback {
-                    comment = comment.testcase_feedback(id, karma);
-                };
-                */
+                for (name, karma) in testcase_feedback {
+                    builder = builder.testcase_feedback(name, karma);
+                }
 
                 let new_comment: Result<NewComment, QueryError> = bodhi.create(&builder);
 
                 match new_comment {
-                    Ok(_) => println!("Comment created."),
+                    Ok(value) => {
+                        println!("Comment created.");
+
+                        if !value.caveats.is_empty() {
+                            println!("Server messages:");
+
+                            for caveat in &value.caveats {
+                                println!("- {}", caveat);
+                            }
+                        }
+                    },
                     Err(error) => {
                         println!("{}", error);
                         continue;

@@ -4,7 +4,7 @@ This project is inspired by [fedora-easy-karma][f-e-k], but with more features.
 
 [f-e-k]: https://pagure.io/fedora-easy-karma
 
-It allows submitting bug and testcase feedback in addition to providing a
+It allows submitting feedback for bugs and test cases in addition to providing a
 comment and karma (providing test case feedback is a work in progress and is
 blocked by a [bodhi server issue][bodhi-issue]).
 

@@ -12,9 +12,10 @@ categories = ["command-line-utilities"]
 keywords = ["fedora", "bodhi", "updates", "feedback"]
 
 [dependencies]
-bodhi = "^0.1.6"
+bodhi = "^0.1.7"
 dirs = "^2.0.2"
 rpassword = "^4.0.3"
+rustyline = "^6.0.0"
 serde = { version = "^1.0.104", features = ["derive"] }
 toml = "^0.5.5"
 
