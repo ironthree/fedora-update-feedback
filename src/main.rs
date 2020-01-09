@@ -350,6 +350,7 @@ fn print_update(update: &Update) {
     println!("{}", update.notes);
     println!();
 
+    println!("URL:            https://bodhi.fedoraproject.org/updates/{}", &update.alias);
     println!("Update type:    {}", update.update_type);
     println!("Submitted:      {}", date);
     println!("Submitter:      {}", update.user.name);
