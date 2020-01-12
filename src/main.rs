@@ -252,12 +252,21 @@ fn ask_feedback<'a>(rl: &mut rustyline::Editor<()>, update: &'a Update) -> Resul
         return Ok(Feedback::Skip);
     };
 
+    println!("Add a descriptive comment (two empty lines or EOF (Ctrl-D) end input):");
     let mut comment_lines: Vec<String> = Vec::new();
 
     loop {
         match rl.readline("Comment: ") {
             Ok(line) => {
                 rl.add_history_entry(&line);
+
+                if comment_lines.len() >= 1 {
+                    // if both the last line and the current line are empty, break
+                    if comment_lines.last().unwrap().is_empty() && line.is_empty() {
+                        break;
+                    }
+                };
+
                 comment_lines.push(line);
             },
             Err(rustyline::error::ReadlineError::Eof) => break,
@@ -437,29 +446,52 @@ fn main() -> Result<(), String> {
     };
 
     println!("Querying bodhi for updates ...");
+
+    let progress_bar = |p: u32, ps: u32| {
+        let width: u32 = 80 - 6;
+
+        let progress = ((p as f64) / (ps as f64) * (width as f64)) as u32;
+        let remaining = width - progress;
+
+        let bar = format!(
+            " [ {}{} ] ",
+            "=".repeat(progress as usize),
+            " ".repeat(remaining as usize)
+        );
+
+        print!("\r{}", &bar);
+        std::io::stdout().flush().unwrap();
+    };
+
     let testing_query = bodhi::query::UpdateQuery::new()
         .releases(release)
         .content_type(ContentType::RPM)
-        .status(UpdateStatus::Testing);
+        .status(UpdateStatus::Testing)
+        .callback(progress_bar);
 
-    let testing_updates = match bodhi.query(&testing_query) {
+    let testing_updates = match bodhi.query(testing_query) {
         Ok(updates) => updates,
         Err(error) => {
             return Err(format!("{}", error));
         },
     };
+
+    println!();
 
     let pending_query = bodhi::query::UpdateQuery::new()
         .releases(release)
         .content_type(ContentType::RPM)
-        .status(UpdateStatus::Pending);
+        .status(UpdateStatus::Pending)
+        .callback(progress_bar);
 
-    let pending_updates = match bodhi.query(&pending_query) {
+    let pending_updates = match bodhi.query(pending_query) {
         Ok(updates) => updates,
         Err(error) => {
             return Err(format!("{}", error));
         },
     };
+
+    println!();
 
     let mut updates: Vec<Update> = Vec::new();
     updates.extend(testing_updates);
@@ -575,7 +607,7 @@ fn main() -> Result<(), String> {
                             println!("Server messages:");
 
                             for caveat in &value.caveats {
-                                println!("- {}", caveat);
+                                println!("- {:?}", caveat);
                             }
                         }
                     },
