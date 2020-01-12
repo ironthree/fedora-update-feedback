@@ -303,7 +303,7 @@ dependencies = [
 
 [[package]]
 name = "fedora-update-feedback"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "bodhi",
  "dirs",
