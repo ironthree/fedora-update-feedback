@@ -11,6 +11,10 @@ readme = "README.md"
 categories = ["command-line-utilities"]
 keywords = ["fedora", "bodhi", "updates", "feedback"]
 
+[features]
+default = []
+feedback = []
+
 [dependencies]
 bodhi = "^0.2.1"
 dirs = "^2.0.2"
