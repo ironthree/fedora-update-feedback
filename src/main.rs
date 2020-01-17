@@ -1,5 +1,4 @@
 use std::cmp::PartialEq;
-use std::convert::TryFrom;
 use std::fs::read_to_string;
 use std::io::{stdin, stdout, Write};
 use std::process::Command;
@@ -150,11 +149,9 @@ fn get_release() -> Result<FedoraRelease, String> {
 
     let release = format!("F{}", release_num);
 
-    let release = match FedoraRelease::try_from(release.as_str()) {
+    let release: FedoraRelease = match release.parse() {
         Ok(release) => release,
-        Err(error) => {
-            return Err(error.to_string());
-        },
+        Err(error) => return Err(error.to_string()),
     };
 
     Ok(release)
@@ -231,11 +228,9 @@ fn get_input(prompt: &str) -> String {
 }
 
 fn str_to_karma(string: &str) -> Option<Karma> {
-    match string {
-        "+1" => Some(Karma::Positive),
-        "0" => Some(Karma::Neutral),
-        "-1" => Some(Karma::Negative),
-        _ => None,
+    match string.parse() {
+        Ok(karma) => Some(karma),
+        Err(_) => None,
     }
 }
 
