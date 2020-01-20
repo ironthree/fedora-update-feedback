@@ -42,10 +42,15 @@ or has already commented on.
 To compile the program, first install `cargo` (the build tool, also pulls in
 the Rust compiler) and `openssl-devel` (used by the OpenSSL rust bindings).
 
-Download the sources (recommended: tarball of the latest release from GitHub),
-and easily build and install the binary for yourself by running
-`cargo install --path .` in the source directory. By default, `cargo` will
-install the binary into `~/.cargo/bin`.
+To download, build, and install the latest version from <https://crates.io>,
+just run `cargo install fedora-update-feedback`.
+
+To build from the sources provided on GitHub, download the sources
+(recommended: tarball of the latest release from GitHub), and easily build
+and install the binary for yourself by running `cargo install --path .` in
+the source directory.
+
+Either way, `cargo` will install the binary into `~/.cargo/bin` by default.
 
 To make it available in `$PATH`, either copy it into `$HOME/.local/bin`, or add
 `~/.cargo/bin` to your `$PATH` (probably by editing `~/.bash_profile`).
