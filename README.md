@@ -1,5 +1,10 @@
 # fedora-update-feedback
 
+[![crates.io](https://img.shields.io/crates/v/fedora-update-feedback.svg)](https://crates.io/crates/fedora-update-feedback/)
+[![crates.io](https://img.shields.io/crates/d/fedora-update-feedback.svg)](https://crates.io/crates/fedora-update-feedback/)
+[![crates.io](https://img.shields.io/crates/l/fedora-update-feedback.svg)](https://crates.io/crates/fedora-update-feedback/)
+[![docs.rs](https://docs.rs/fedora-update-feedback/badge.svg)](https://docs.rs/fedora-update-feedback/)
+
 This project is inspired by [fedora-easy-karma][f-e-k], but with more features.
 
 [f-e-k]: https://pagure.io/fedora-easy-karma
