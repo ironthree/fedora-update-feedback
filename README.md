@@ -5,16 +5,58 @@ This project is inspired by [fedora-easy-karma][f-e-k], but with more features.
 [f-e-k]: https://pagure.io/fedora-easy-karma
 
 It allows submitting feedback for bugs and test cases in addition to providing a
-comment and karma (providing test case feedback is a work in progress and is
-blocked by a [bodhi server issue][bodhi-issue]).
+comment and karma (providing bug and test case feedback is a work in progress
+and is blocked by a [bodhi server issue][bodhi-issue]).
 
 [bodhi-issue]: https://github.com/fedora-infra/bodhi/issues/3888
 
-Like `fedora-update-notifier`, it expects a config file at
-`~/.config/fedora.toml`, with at least the following contents:
+By default, all updates in `testing` or `pending` state that the user has not
+submitted themselves or has already commented on are presented, sorted by
+ascending submission date (so, oldest to most recent update).
+
+### requirements
+
+The program assumes that the `dnf` and `rpm` binaries are present on the system
+(which is probably a reasonable assumption for a CLI tool targeted at fedora
+users).
+
+It also expects a config file at `~/.config/fedora.toml`, with at least the
+following contents:
 
 ```toml
 [FAS]
 username = "USERNAME"
 ```
+
+This value is used to filter out updates that the user themselves has submitted,
+or has already commented on.
+
+
+### installation
+
+To compile the program, first install `cargo` (the build tool, also pulls in
+the Rust compiler) and `openssl-devel` (used by the OpenSSL rust bindings).
+
+Download the sources (recommended: tarball of the latest release from GitHub),
+and easily build and install the binary for yourself by running
+`cargo install --path .` in the source directory. By default, `cargo` will
+install the binary into `~/.cargo/bin`.
+
+To make it available in `$PATH`, either copy it into `$HOME/.local/bin`, or add
+`~/.cargo/bin` to your `$PATH` (probably by editing `~/.bash_profile`).
+
+
+### TODO
+
+- As mentioned above, submitting bug and testcase feedback is implemented (but
+  hidden behind a compilation flag), but blocked by a bodhi server issue (or me
+  being stupid).
+
+- I'd like to improve the "visual quality" of the terminal output and
+  pretty-printed data, which should be easy.
+
+- It would be great to add additional switches and arguments to the binary (for
+  example, sorting updates by a different value than submission date).
+
+- Ignoring certain updates or packages is not yet implemented.
 
