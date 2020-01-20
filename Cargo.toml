@@ -10,6 +10,7 @@ authors = ["Fabio Valentini <decathorpe@gmail.com>"]
 readme = "README.md"
 categories = ["command-line-utilities"]
 keywords = ["fedora", "bodhi", "updates", "feedback"]
+repository = "https://github.com/ironthree/fedora-update-feedback"
 
 [features]
 default = []
