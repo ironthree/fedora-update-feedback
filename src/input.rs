@@ -104,49 +104,38 @@ pub fn ask_feedback<'a>(rl: &mut rustyline::Editor<()>, update: &'a Update) -> R
         None => Karma::Neutral,
     };
 
-    #[cfg(feature = "feedback")]
-    {
-        let mut bug_feedback: Vec<(u32, Karma)> = Vec::new();
-        for bug in &update.bugs {
-            let bug_title = match &bug.title {
-                Some(title) => title.as_str(),
-                None => "(None)",
-            };
+    let mut bug_feedback: Vec<(u32, Karma)> = Vec::new();
+    for bug in &update.bugs {
+        let bug_title = match &bug.title {
+            Some(title) => title.as_str(),
+            None => "(None)",
+        };
 
-            println!("{}: {}", bug.bug_id, bug_title);
-            if let Some(input) = str_to_karma(get_input("Bug Feedback (+1, 0, -1)").as_str()) {
-                bug_feedback.push((bug.bug_id, input));
-            } else {
-                println!("Skipped bug: {}", bug.bug_id);
-            };
-        }
-
-        let mut testcase_feedback: Vec<(&str, Karma)> = Vec::new();
-        if let Some(test_cases) = &update.test_cases {
-            for test_case in test_cases {
-                println!("{}", &test_case.name);
-
-                if let Some(input) = str_to_karma(get_input("Test Case Feedback (+1, 0, -1)").as_str()) {
-                    testcase_feedback.push((&test_case.name, input));
-                } else {
-                    println!("Skipped test case: {}", &test_case.name);
-                };
-            }
-        }
-
-        return Ok(Feedback::Values {
-            comment,
-            karma,
-            bug_feedback,
-            testcase_feedback,
-        });
+        println!("{}: {}", bug.bug_id, bug_title);
+        if let Some(input) = str_to_karma(get_input("Bug Feedback (+1, 0, -1)").as_str()) {
+            bug_feedback.push((bug.bug_id, input));
+        } else {
+            println!("Skipped bug: {}", bug.bug_id);
+        };
     }
 
-    #[cfg(not(feature = "feedback"))]
+    let mut testcase_feedback: Vec<(&str, Karma)> = Vec::new();
+    if let Some(test_cases) = &update.test_cases {
+        for test_case in test_cases {
+            println!("{}", &test_case.name);
+
+            if let Some(input) = str_to_karma(get_input("Test Case Feedback (+1, 0, -1)").as_str()) {
+                testcase_feedback.push((&test_case.name, input));
+            } else {
+                println!("Skipped test case: {}", &test_case.name);
+            };
+        }
+    }
+
     Ok(Feedback::Values {
         comment,
         karma,
-        bug_feedback: Vec::new(),
-        testcase_feedback: Vec::new(),
+        bug_feedback,
+        testcase_feedback,
     })
 }

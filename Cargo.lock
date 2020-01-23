@@ -86,9 +86,9 @@ dependencies = [
 
 [[package]]
 name = "bodhi"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e9ae9f49d3e32f4308bb50b0d2b91f7aada8cea74e951c447f59dc5539891620"
+checksum = "578795f16b49bd48867039306160ec945c9fa113bd2a54b807cd8a3503de7594"
 dependencies = [
  "chrono",
  "failure",
