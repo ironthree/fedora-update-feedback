@@ -1,19 +1,45 @@
 use bodhi::error::QueryError;
 use bodhi::*;
 
+use structopt::StructOpt;
+
 use fedora_update_feedback::*;
 
+#[derive(Debug, StructOpt)]
+struct Command {
+    /// Override or provide FAS username
+    #[structopt(long, short)]
+    username: Option<String>,
+    /// Include updates in "pending" state
+    #[structopt(long, short = "p")]
+    with_pending: bool,
+}
+
 fn main() -> Result<(), String> {
-    let username = match (get_config(), get_legacy_username()) {
-        (Ok(config), _) => config.fas.username,
-        (Err(_), Ok(Some(username))) => {
+    let args: Command = Command::from_args();
+
+    // check possible username sources in decending priority:
+    // CLI argument, fedora.toml config file, .fedora.upn legacy fallback
+    let username = match (args.username, get_config(), get_legacy_username()) {
+        // prefer username specified on command line, if it was specified
+        (Some(username), _, _) => username,
+
+        // otherwise, prefer username from fedora.toml
+        (None, Ok(config), _) => config.fas.username,
+
+        // if that didn't work, use fallback value from .fedora.upn
+        (None, Err(_), Ok(Some(username))) => {
             println!("Failed to read ~/.config/fedora.toml, using fallback (~/.fedora.upn).");
             username
         },
-        (Err(error), Ok(None)) => {
+
+        // if reading config file failed and .fedora.upn is missing, error out
+        (None, Err(error), Ok(None)) => {
             return Err(format!("{}, and fallback (~/.fedora.upn) not found.", error));
         },
-        (Err(err1), Err(err2)) => {
+
+        // if reading both the config file and .fedora.upn failed, error out
+        (None, Err(err1), Err(err2)) => {
             return Err(format!("{} and failed to read ~/.fedora.upn ({}).", err1, err2));
         },
     };
@@ -43,6 +69,7 @@ fn main() -> Result<(), String> {
     };
 
     println!("Querying bodhi for updates ...");
+    let mut updates: Vec<Update> = Vec::new();
 
     let testing = "Updates (testing)";
     let testing_progress = |p, ps| progress_bar(testing, p, ps);
@@ -60,29 +87,31 @@ fn main() -> Result<(), String> {
         },
     };
 
-    println!();
-
-    let pending = "Updates (pending)";
-    let pending_progress = |p, ps| progress_bar(pending, p, ps);
-
-    let pending_query = bodhi::query::UpdateQuery::new()
-        .releases(release)
-        .content_type(ContentType::RPM)
-        .status(UpdateStatus::Pending)
-        .callback(pending_progress);
-
-    let pending_updates = match bodhi.query(pending_query) {
-        Ok(updates) => updates,
-        Err(error) => {
-            return Err(format!("{}", error));
-        },
-    };
-
-    println!();
-
-    let mut updates: Vec<Update> = Vec::new();
     updates.extend(testing_updates);
-    updates.extend(pending_updates);
+
+    println!();
+
+    if args.with_pending {
+        let pending = "Updates (pending)";
+        let pending_progress = |p, ps| progress_bar(pending, p, ps);
+
+        let pending_query = bodhi::query::UpdateQuery::new()
+            .releases(release)
+            .content_type(ContentType::RPM)
+            .status(UpdateStatus::Pending)
+            .callback(pending_progress);
+
+        let pending_updates = match bodhi.query(pending_query) {
+            Ok(updates) => updates,
+            Err(error) => {
+                return Err(format!("{}", error));
+            },
+        };
+
+        updates.extend(pending_updates);
+
+        println!();
+    }
 
     // filter out updates created by the current user
     let updates: Vec<Update> = updates
