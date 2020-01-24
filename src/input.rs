@@ -76,7 +76,7 @@ pub fn ask_feedback<'a>(rl: &mut rustyline::Editor<()>, update: &'a Update) -> R
                     // if both the last line and the current line are empty, break
                     if comment_lines.last().unwrap().is_empty() && line.is_empty() {
                         break;
-                    }
+                    };
                 };
 
                 comment_lines.push(line);

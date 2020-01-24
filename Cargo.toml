@@ -20,6 +20,7 @@ rustyline = "^6.0.0"
 serde = { version = "^1.0.104", features = ["derive"] }
 structopt = "^0.3.8"
 term_size = "^0.2.1"
+textwrap = "^0.11.0"
 toml = "^0.5.5"
 
 [profile.release]

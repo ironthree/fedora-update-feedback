@@ -67,7 +67,7 @@ pub fn get_legacy_username() -> Result<Option<String>, String> {
                 Ok(None)
             } else {
                 Err(error.to_string())
-            }
+            };
         },
     };
 

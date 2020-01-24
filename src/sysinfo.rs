@@ -86,7 +86,7 @@ pub fn get_installed() -> Result<Vec<NVR>, String> {
             v: v.to_string(),
             r: r.to_string(),
         });
-    }
+    };
 
     Ok(packages)
 }

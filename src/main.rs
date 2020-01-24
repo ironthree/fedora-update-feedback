@@ -71,47 +71,21 @@ fn main() -> Result<(), String> {
     println!("Querying bodhi for updates ...");
     let mut updates: Vec<Update> = Vec::new();
 
-    let testing = "Updates (testing)";
-    let testing_progress = |p, ps| progress_bar(testing, p, ps);
-
-    let testing_query = bodhi::query::UpdateQuery::new()
-        .releases(release)
-        .content_type(ContentType::RPM)
-        .status(UpdateStatus::Testing)
-        .callback(testing_progress);
-
-    let testing_updates = match bodhi.query(testing_query) {
-        Ok(updates) => updates,
-        Err(error) => {
-            return Err(format!("{}", error));
-        },
-    };
-
+    // get updates in "testing" state
+    let testing_updates = query_testing(&bodhi, release)?;
     updates.extend(testing_updates);
-
     println!();
 
     if args.with_pending {
-        let pending = "Updates (pending)";
-        let pending_progress = |p, ps| progress_bar(pending, p, ps);
-
-        let pending_query = bodhi::query::UpdateQuery::new()
-            .releases(release)
-            .content_type(ContentType::RPM)
-            .status(UpdateStatus::Pending)
-            .callback(pending_progress);
-
-        let pending_updates = match bodhi.query(pending_query) {
-            Ok(updates) => updates,
-            Err(error) => {
-                return Err(format!("{}", error));
-            },
-        };
-
+        // get updates in "pending" state
+        let pending_updates = query_pending(&bodhi, release)?;
         updates.extend(pending_updates);
-
         println!();
-    }
+    };
+
+    // get updates in "unpushed" state
+    let unpushed_updates = query_unpushed(&bodhi, release)?;
+    println!();
 
     // filter out updates created by the current user
     let updates: Vec<Update> = updates
@@ -128,15 +102,15 @@ fn main() -> Result<(), String> {
             for comment in comments {
                 if comment.user.name == username {
                     commented = true;
-                }
-            }
+                };
+            };
 
             if !commented {
                 relevant_updates.push(update);
-            }
+            };
         } else {
             relevant_updates.push(update);
-        }
+        };
     }
 
     // filter out updates for packages that are not installed
@@ -151,17 +125,37 @@ fn main() -> Result<(), String> {
                 v: v.to_string(),
                 r: r.to_string(),
             });
-        }
+        };
 
         for nvr in nvrs {
             if packages.contains(&nvr) {
                 installed_updates.push(&update);
-            }
-        }
-    }
+            };
+        };
+    };
 
     if installed_updates.is_empty() {
         return Ok(());
+    };
+
+    let mut installed_unpushed: Vec<&Update> = Vec::new();
+    for update in &unpushed_updates {
+        let mut nvrs: Vec<NVR> = Vec::new();
+
+        for build in &update.builds {
+            let (n, v, r) = parse_nvr(&build.nvr)?;
+            nvrs.push(NVR {
+                n: n.to_string(),
+                v: v.to_string(),
+                r: r.to_string(),
+            });
+        };
+
+        for nvr in nvrs {
+            if packages.contains(&nvr) {
+                installed_unpushed.push(&update);
+            };
+        };
     };
 
     // deduplicate updates with multiple builds
@@ -204,11 +198,11 @@ fn main() -> Result<(), String> {
 
                 for (id, karma) in bug_feedback {
                     builder = builder.bug_feedback(id, karma);
-                }
+                };
 
                 for (name, karma) in testcase_feedback {
                     builder = builder.testcase_feedback(name, karma);
-                }
+                };
 
                 let new_comment: Result<NewComment, QueryError> = bodhi.create(&builder);
 
@@ -228,10 +222,22 @@ fn main() -> Result<(), String> {
                         println!("{}", error);
                         continue;
                     },
-                }
+                };
             },
         };
-    }
+    };
+
+    if !installed_unpushed.is_empty() {
+        println!("There are unpushed updates installed on this system.");
+        println!("It is recommended to run 'dnf distro-sync' to clean this up.");
+
+        for update in installed_unpushed {
+            println!(" - {}:", update.title);
+            for build in &update.builds {
+                println!("   - {}", build.nvr);
+            };
+        };
+    };
 
     Ok(())
 }

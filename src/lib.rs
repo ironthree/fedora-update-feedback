@@ -22,6 +22,9 @@ pub use output::*;
 mod parse;
 pub use parse::*;
 
+mod query;
+pub use query::*;
+
 mod sysinfo;
 pub use sysinfo::*;
 

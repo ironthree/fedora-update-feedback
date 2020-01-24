@@ -5,7 +5,7 @@ pub fn parse_nevra(nevra: &str) -> Result<(&str, &str, &str, &str, &str), String
 
     if nevr_a.len() != 2 {
         return Err(format!("Unexpected error when parsing NEVRAs: {}", nevra));
-    }
+    };
 
     // rsplitn returns things in reverse order
     let a = nevr_a.remove(0);
@@ -15,7 +15,7 @@ pub fn parse_nevra(nevra: &str) -> Result<(&str, &str, &str, &str, &str), String
 
     if n_ev_r.len() != 3 {
         return Err(format!("Unexpected error when parsing NEVRAs: {}", nevr));
-    }
+    };
 
     // rsplitn returns things in reverse order
     let r = n_ev_r.remove(0);
@@ -41,7 +41,7 @@ pub fn parse_filename(nevrax: &str) -> Result<(&str, &str, &str, &str, &str), St
 
     if nevra_x.len() != 2 {
         return Err(format!("Unexpected error when parsing dnf output: {}", nevrax));
-    }
+    };
 
     // rsplitn returns things in reverse order
     let _x = nevra_x.remove(0);
@@ -58,7 +58,7 @@ pub fn parse_nvr(nvr: &str) -> Result<(&str, &str, &str), String> {
 
     if n_v_r.len() != 3 {
         return Err(format!("Unexpected error when parsing NEVRAs: {}", nvr));
-    }
+    };
 
     // rsplitn returns things in reverse order
     let r = n_v_r.remove(0);
