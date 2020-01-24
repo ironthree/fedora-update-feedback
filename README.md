@@ -57,10 +57,6 @@ To make it available in `$PATH`, either copy it into `$HOME/.local/bin`, or add
 
 ### TODO
 
-- As mentioned above, submitting bug and testcase feedback is implemented (but
-  hidden behind a compilation flag), but blocked by a bodhi server issue (or me
-  being stupid).
-
 - I'd like to improve the "visual quality" of the terminal output and
   pretty-printed data, which should be easy.
 
