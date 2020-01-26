@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use bodhi::error::QueryError;
 use bodhi::*;
 
@@ -57,7 +59,7 @@ fn main() -> Result<(), String> {
 
     // query DNF for installed packages
     println!("Querying dnf for installed packages ...");
-    let packages = get_installed()?;
+    let installed_packages = get_installed()?;
 
     // query bodhi for packages in updates-testing
     println!("Authenticating with bodhi ...");
@@ -116,8 +118,11 @@ fn main() -> Result<(), String> {
         };
     }
 
-    // filter out updates for packages that are not installed
+    // filter out updates for packages that are not installed;
+    // and remember which builds are installed for which update
     let mut installed_updates: Vec<&Update> = Vec::new();
+    let mut builds_for_update: HashMap<&str, Vec<String>> = HashMap::new();
+
     for update in &relevant_updates {
         let mut nvrs: Vec<NVR> = Vec::new();
 
@@ -131,8 +136,13 @@ fn main() -> Result<(), String> {
         }
 
         for nvr in nvrs {
-            if packages.contains(&nvr) {
+            if installed_packages.contains(&nvr) {
                 installed_updates.push(&update);
+
+                builds_for_update
+                    .entry(&update.alias)
+                    .and_modify(|e| e.push(nvr.to_string()))
+                    .or_insert(vec![nvr.to_string()]);
             };
         }
     }
@@ -155,8 +165,13 @@ fn main() -> Result<(), String> {
         }
 
         for nvr in nvrs {
-            if packages.contains(&nvr) {
+            if installed_packages.contains(&nvr) {
                 installed_unpushed.push(&update);
+
+                builds_for_update
+                    .entry(&update.alias)
+                    .and_modify(|e| e.push(nvr.to_string()))
+                    .or_insert(vec![nvr.to_string()]);
             };
         }
     }
@@ -188,7 +203,10 @@ fn main() -> Result<(), String> {
             continue;
         };
 
-        let feedback = ask_feedback(&mut rl, update)?;
+        // this unwrap is safe since we definitely inserted a value for every update
+        let builds = builds_for_update.get(update.alias.as_str()).unwrap();
+
+        let feedback = ask_feedback(&mut rl, update, &builds)?;
 
         match feedback {
             Feedback::Cancel => {
@@ -258,8 +276,9 @@ fn main() -> Result<(), String> {
 
         for update in installed_unpushed {
             println!(" - {}:", update.title);
-            for build in &update.builds {
-                println!("   - {}", build.nvr);
+            // this unwrap is safe since we definitely inserted a value for every update
+            for build in builds_for_update.get(update.alias.as_str()).unwrap() {
+                println!("   - {}", build);
             }
         }
     };

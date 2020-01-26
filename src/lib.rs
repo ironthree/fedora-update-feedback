@@ -9,6 +9,7 @@
 //! [bodhi-rs]: https://crates.io/crates/bodhi
 
 use std::cmp::PartialEq;
+use std::fmt::Display;
 
 mod config;
 pub use config::*;
@@ -40,4 +41,10 @@ pub struct NVR {
     pub v: String,
     /// release of the package
     pub r: String,
+}
+
+impl Display for NVR {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}-{}-{}", self.n, self.v, self.r)
+    }
 }

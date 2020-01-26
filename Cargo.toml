@@ -13,7 +13,7 @@ keywords = ["fedora", "bodhi", "updates", "feedback"]
 repository = "https://github.com/ironthree/fedora-update-feedback"
 
 [dependencies]
-bodhi = "^0.5.1"
+bodhi = "^0.5.4"
 dirs = "^2.0.2"
 rpassword = "^4.0.3"
 rustyline = "^6.0.0"

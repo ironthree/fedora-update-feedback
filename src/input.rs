@@ -53,8 +53,12 @@ pub fn str_to_karma(string: &str) -> Option<Karma> {
 ///    automatically; two empty lines or EOF (`Ctrl-D`) ends comment input)
 ///
 /// If enabled at compile time, it also asks for bug and testcase feedback.
-pub fn ask_feedback<'a>(rl: &mut rustyline::Editor<()>, update: &'a Update) -> Result<Feedback<'a>, String> {
-    print_update(update);
+pub fn ask_feedback<'a>(
+    rl: &mut rustyline::Editor<()>,
+    update: &'a Update,
+    builds: &[String],
+) -> Result<Feedback<'a>, String> {
+    print_update(update, builds);
 
     enum Action {
         Skip,

@@ -31,7 +31,7 @@ pub fn progress_bar(prefix: &str, p: u32, ps: u32) {
 }
 
 /// This helper function pretty-prints an update.
-pub fn print_update(update: &Update) {
+pub fn print_update(update: &Update, builds: &[String]) {
     let date = match &update.date_submitted {
         Some(date) => date.to_string(),
         None => "(None)".to_string(),
@@ -79,24 +79,20 @@ pub fn print_update(update: &Update) {
     println!();
 
     if !update.bugs.is_empty() {
-        let bugs: Vec<(u32, &str)> = update
+        let bugs: Vec<(String, Option<&String>)> = update
             .bugs
             .iter()
-            .map(|b| {
-                (
-                    b.bug_id,
-                    match &b.title {
-                        Some(title) => title.as_str(),
-                        None => "(None)",
-                    },
-                )
-            })
+            .map(|b| (b.url().to_string(), b.title.as_ref()))
             .collect();
 
         println!("Bugs:");
 
-        for (id, title) in bugs {
-            println!("- {}: {}", id, title);
+        for (url, title) in bugs {
+            println!("- {}", url);
+
+            if let Some(title) = title {
+                println!("  {}", title);
+            };
         }
 
         println!();
@@ -104,12 +100,12 @@ pub fn print_update(update: &Update) {
 
     match &update.test_cases {
         Some(ts) if !ts.is_empty() => {
-            let test_cases: Vec<&str> = ts.iter().map(|t| t.name.as_str()).collect();
+            let test_cases: Vec<String> = ts.iter().map(|t| t.url().to_string()).collect();
 
             println!("Test cases:");
 
-            for name in test_cases {
-                println!("- {}", name);
+            for url in test_cases {
+                println!("- {}", url);
             }
 
             println!();
@@ -118,8 +114,8 @@ pub fn print_update(update: &Update) {
     };
 
     println!("Builds:");
-    for build in &update.builds {
-        println!("- {}", &build.nvr);
+    for build in builds {
+        println!("- {}", build);
     }
 
     println!();
