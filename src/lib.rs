@@ -13,6 +13,9 @@ use std::cmp::PartialEq;
 mod config;
 pub use config::*;
 
+mod ignore;
+pub use ignore::*;
+
 mod input;
 pub use input::*;
 

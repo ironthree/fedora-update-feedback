@@ -8,6 +8,8 @@ use super::print_update;
 pub enum Feedback<'a> {
     /// With this input, providing feedback for the current update is cancelled.
     Cancel,
+    /// Ignore this update now and in the future.
+    Ignore,
     /// With this input, the current update is skipped.
     Skip,
     /// These values are used when submitting feedback.
@@ -54,14 +56,28 @@ pub fn str_to_karma(string: &str) -> Option<Karma> {
 pub fn ask_feedback<'a>(rl: &mut rustyline::Editor<()>, update: &'a Update) -> Result<Feedback<'a>, String> {
     print_update(update);
 
-    let skip = match get_input("Skip (Y/n)").as_str() {
-        "y" | "Y" => true,
-        "n" | "N" => false,
-        _ => true,
+    enum Action {
+        Skip,
+        Ignore,
+        Comment,
     };
 
-    if skip {
+    let action = match get_input("Action ([S]kip / [i]gnore / [c]omment)")
+        .to_lowercase()
+        .as_str()
+    {
+        "s" => Action::Skip,
+        "i" => Action::Ignore,
+        "c" => Action::Comment,
+        _ => Action::Skip,
+    };
+
+    if let Action::Skip = action {
         return Ok(Feedback::Skip);
+    };
+
+    if let Action::Ignore = action {
+        return Ok(Feedback::Ignore);
     };
 
     println!("Add a descriptive comment (two empty lines or EOF (Ctrl-D) end input):");

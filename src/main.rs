@@ -13,6 +13,9 @@ struct Command {
     /// Include updates in "pending" state
     #[structopt(long, short = "p")]
     with_pending: bool,
+    /// Clear ignored updates
+    #[structopt(long, short = "i")]
+    clear_ignored: bool,
 }
 
 fn main() -> Result<(), String> {
@@ -103,7 +106,7 @@ fn main() -> Result<(), String> {
                 if comment.user.name == username {
                     commented = true;
                 };
-            };
+            }
 
             if !commented {
                 relevant_updates.push(update);
@@ -125,14 +128,14 @@ fn main() -> Result<(), String> {
                 v: v.to_string(),
                 r: r.to_string(),
             });
-        };
+        }
 
         for nvr in nvrs {
             if packages.contains(&nvr) {
                 installed_updates.push(&update);
             };
-        };
-    };
+        }
+    }
 
     if installed_updates.is_empty() {
         return Ok(());
@@ -149,14 +152,14 @@ fn main() -> Result<(), String> {
                 v: v.to_string(),
                 r: r.to_string(),
             });
-        };
+        }
 
         for nvr in nvrs {
             if packages.contains(&nvr) {
                 installed_unpushed.push(&update);
             };
-        };
-    };
+        }
+    }
 
     // deduplicate updates with multiple builds
     installed_updates.sort_by(|a, b| a.alias.cmp(&b.alias));
@@ -167,13 +170,35 @@ fn main() -> Result<(), String> {
 
     let mut rl = rustyline::Editor::<()>::new();
 
+    let mut ignored = if !args.clear_ignored {
+        match get_ignored() {
+            Ok(ignored) => ignored,
+            Err(_) => Vec::new(),
+        }
+    } else {
+        Vec::new()
+    };
+
+    // remove old updates from ignored list
+    ignored.retain(|i| installed_updates.iter().map(|u| &u.alias).any(|x| x == i));
+
     for update in installed_updates {
+        if ignored.contains(&update.alias) {
+            println!("Skipping ignored update: {}", &update.alias);
+            continue;
+        };
+
         let feedback = ask_feedback(&mut rl, update)?;
 
         match feedback {
             Feedback::Cancel => {
                 println!("Cancelling.");
                 break;
+            },
+            Feedback::Ignore => {
+                println!("Ignoring.");
+                ignored.push(update.alias.clone());
+                continue;
             },
             Feedback::Skip => {
                 println!("Skipping.");
@@ -198,11 +223,11 @@ fn main() -> Result<(), String> {
 
                 for (id, karma) in bug_feedback {
                     builder = builder.bug_feedback(id, karma);
-                };
+                }
 
                 for (name, karma) in testcase_feedback {
                     builder = builder.testcase_feedback(name, karma);
-                };
+                }
 
                 let new_comment: Result<NewComment, QueryError> = bodhi.create(&builder);
 
@@ -225,7 +250,7 @@ fn main() -> Result<(), String> {
                 };
             },
         };
-    };
+    }
 
     if !installed_unpushed.is_empty() {
         println!("There are unpushed updates installed on this system.");
@@ -235,8 +260,13 @@ fn main() -> Result<(), String> {
             println!(" - {}:", update.title);
             for build in &update.builds {
                 println!("   - {}", build.nvr);
-            };
-        };
+            }
+        }
+    };
+
+    if let Err(error) = set_ignored(&ignored) {
+        println!("Failed to write ignored updates to disk.");
+        println!("{}", error);
     };
 
     Ok(())

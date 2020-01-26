@@ -97,7 +97,7 @@ pub fn print_update(update: &Update) {
 
         for (id, title) in bugs {
             println!("- {}: {}", id, title);
-        };
+        }
 
         println!();
     };
@@ -110,7 +110,7 @@ pub fn print_update(update: &Update) {
 
             for name in test_cases {
                 println!("- {}", name);
-            };
+            }
 
             println!();
         },
@@ -120,7 +120,7 @@ pub fn print_update(update: &Update) {
     println!("Builds:");
     for build in &update.builds {
         println!("- {}", &build.nvr);
-    };
+    }
 
     println!();
 }
