@@ -32,11 +32,21 @@ following contents:
 username = "USERNAME"
 ```
 
-This value is used to filter out updates that the user themselves has submitted,
-or has already commented on.
+If this file is not present, the legacy `~/.fedora.upn` file is used as a
+fallback mechanism.
+
+If both files are not present, the username has to be specified with the
+`--username USERNAME` CLI switch.
+
+The username is used to authenticate with bodhi, and to filter out updates that
+the user themselves has submitted, or has already commented on.
 
 
 ### installation
+
+> RPM packages are now available on COPR:
+> 
+> <https://copr.fedorainfracloud.org/coprs/decathorpe/fedora-update-feedback/>
 
 To compile the program, first install `cargo` (the build tool, also pulls in
 the Rust compiler) and `openssl-devel` (used by the OpenSSL rust bindings).
@@ -62,6 +72,4 @@ To make it available in `$PATH`, either copy it into `$HOME/.local/bin`, or add
 
 - It would be great to add additional switches and arguments to the binary (for
   example, sorting updates by a different value than submission date).
-
-- Ignoring certain updates or packages is not yet implemented.
 
