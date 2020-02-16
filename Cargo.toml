@@ -18,7 +18,7 @@ dirs = "^2.0.2"
 rpassword = "^4.0.3"
 rustyline = "^6.0.0"
 serde = { version = "^1.0.104", features = ["derive"] }
-structopt = "^0.3.8"
+structopt = { version = "^0.3.8", features = ["color", "suggestions", "wrap_help"] }
 term_size = "^0.3.1"
 textwrap = "^0.11.0"
 toml = "^0.5.5"
