@@ -67,3 +67,47 @@ pub fn parse_nvr(nvr: &str) -> Result<(&str, &str, &str), String> {
 
     Ok((n, v, r))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn nevra() {
+        let string = "maven-1:3.6.1-5.fc32.noarch";
+        let value = ("maven", "1", "3.6.1", "5.fc32", "noarch");
+
+        assert_eq!(parse_nevra(string).unwrap(), value);
+
+        let string = "dnf-4.2.18-2.fc32.noarch";
+        let value = ("dnf", "0", "4.2.18", "2.fc32", "noarch");
+
+        assert_eq!(parse_nevra(string).unwrap(), value);
+    }
+
+    #[test]
+    fn filename() {
+        let string = "maven-1:3.6.1-5.fc32.noarch.rpm";
+        let value = ("maven", "1", "3.6.1", "5.fc32", "noarch");
+
+        assert_eq!(parse_filename(string).unwrap(), value);
+
+        let string = "dnf-4.2.18-2.fc32.src.rpm";
+        let value = ("dnf", "0", "4.2.18", "2.fc32", "src");
+
+        assert_eq!(parse_filename(string).unwrap(), value);
+    }
+
+    #[test]
+    fn nvr() {
+        let string = "maven-3.6.1-5.fc32";
+        let value = ("maven", "3.6.1", "5.fc32");
+
+        assert_eq!(parse_nvr(string).unwrap(), value);
+
+        let string = "dnf-4.2.18-2.fc32";
+        let value = ("dnf", "4.2.18", "2.fc32");
+
+        assert_eq!(parse_nvr(string).unwrap(), value);
+    }
+}
