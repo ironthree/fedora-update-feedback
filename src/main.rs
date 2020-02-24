@@ -12,9 +12,15 @@ struct Command {
     /// Override or provide FAS username
     #[structopt(long, short)]
     username: Option<String>,
+    /// Check for installed obsolete updates
+    #[structopt(long, short = "O")]
+    check_obsoleted: bool,
     /// Include updates in "pending" state
-    #[structopt(long, short = "p")]
-    with_pending: bool,
+    #[structopt(long, short = "P")]
+    check_pending: bool,
+    /// Check for installed unpushed updates
+    #[structopt(long, short = "U")]
+    check_unpushed: bool,
     /// Clear ignored updates
     #[structopt(long, short = "i")]
     clear_ignored: bool,
@@ -23,43 +29,26 @@ struct Command {
 fn main() -> Result<(), String> {
     let args: Command = Command::from_args();
 
-    // check possible username sources in decending priority:
-    // CLI argument, fedora.toml config file, .fedora.upn legacy fallback
-    let username = match (args.username, get_config(), get_legacy_username()) {
-        // prefer username specified on command line, if it was specified
-        (Some(username), _, _) => username,
+    let config = if let Ok(config) = get_config() {
+        Some(config)
+    } else {
+        None
+    };
 
-        // otherwise, prefer username from fedora.toml
-        (None, Ok(config), _) => config.fas.username,
-
-        // if that didn't work, use fallback value from .fedora.upn
-        (None, Err(_), Ok(Some(username))) => {
-            println!("Failed to read ~/.config/fedora.toml, using fallback (~/.fedora.upn).");
-            username
-        },
-
-        // if reading config file failed and .fedora.upn is missing, error out
-        (None, Err(error), Ok(None)) => {
-            return Err(format!("{}, and fallback (~/.fedora.upn) not found.", error));
-        },
-
-        // if reading both the config file and .fedora.upn failed, error out
-        (None, Err(err1), Err(err2)) => {
-            return Err(format!("{} and failed to read ~/.fedora.upn ({}).", err1, err2));
-        },
+    let username = if let Some(username) = &args.username {
+        username.clone()
+    } else if let Some(config) = &config {
+        config.fas.username.clone()
+    } else if let Ok(Some(username)) = get_legacy_username() {
+        username
+    } else {
+        return Err(String::from("Failed to read ~/.config/fedora.toml and ~/.fedora.upn."));
     };
 
     println!("Username: {}", &username);
 
     // read password from command line
     let password = rpassword::prompt_password_stdout("FAS Password: ").unwrap();
-
-    // query rpm for current release
-    let release = get_release()?;
-
-    // query DNF for installed packages
-    println!("Querying dnf for installed packages ...");
-    let installed_packages = get_installed()?;
 
     // query bodhi for packages in updates-testing
     println!("Authenticating with bodhi ...");
@@ -73,6 +62,13 @@ fn main() -> Result<(), String> {
         },
     };
 
+    // query rpm for current release
+    let release = get_release()?;
+
+    // query DNF for installed packages
+    println!("Querying dnf for installed packages ...");
+    let installed_packages = get_installed()?;
+
     println!("Querying bodhi for updates ...");
     let mut updates: Vec<Update> = Vec::new();
 
@@ -81,16 +77,28 @@ fn main() -> Result<(), String> {
     updates.extend(testing_updates);
     println!();
 
-    if args.with_pending {
+    let check_pending = args.check_pending || {
+        if let Some(config) = &config {
+            if let Some(cfg) = &config.fuf {
+                if let Some(b) = cfg.check_pending {
+                    b
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    };
+
+    if check_pending {
         // get updates in "pending" state
         let pending_updates = query_pending(&bodhi, release)?;
         updates.extend(pending_updates);
         println!();
     };
-
-    // get updates in "unpushed" state
-    let unpushed_updates = query_unpushed(&bodhi, release)?;
-    println!();
 
     // filter out updates created by the current user
     let updates: Vec<Update> = updates
@@ -121,7 +129,7 @@ fn main() -> Result<(), String> {
     // filter out updates for packages that are not installed;
     // and remember which builds are installed for which update
     let mut installed_updates: Vec<&Update> = Vec::new();
-    let mut builds_for_update: HashMap<&str, Vec<String>> = HashMap::new();
+    let mut builds_for_update: HashMap<String, Vec<String>> = HashMap::new();
 
     for update in &relevant_updates {
         let mut nvrs: Vec<NVR> = Vec::new();
@@ -140,7 +148,7 @@ fn main() -> Result<(), String> {
                 installed_updates.push(&update);
 
                 builds_for_update
-                    .entry(&update.alias)
+                    .entry(update.alias.clone())
                     .and_modify(|e| e.push(nvr.to_string()))
                     .or_insert(vec![nvr.to_string()]);
             };
@@ -150,31 +158,6 @@ fn main() -> Result<(), String> {
     if installed_updates.is_empty() {
         return Ok(());
     };
-
-    let mut installed_unpushed: Vec<&Update> = Vec::new();
-    for update in &unpushed_updates {
-        let mut nvrs: Vec<NVR> = Vec::new();
-
-        for build in &update.builds {
-            let (n, v, r) = parse_nvr(&build.nvr)?;
-            nvrs.push(NVR {
-                n: n.to_string(),
-                v: v.to_string(),
-                r: r.to_string(),
-            });
-        }
-
-        for nvr in nvrs {
-            if installed_packages.contains(&nvr) {
-                installed_unpushed.push(&update);
-
-                builds_for_update
-                    .entry(&update.alias)
-                    .and_modify(|e| e.push(nvr.to_string()))
-                    .or_insert(vec![nvr.to_string()]);
-            };
-        }
-    }
 
     // deduplicate updates with multiple builds
     installed_updates.sort_by(|a, b| a.alias.cmp(&b.alias));
@@ -270,17 +253,124 @@ fn main() -> Result<(), String> {
         };
     }
 
-    if !installed_unpushed.is_empty() {
-        println!("There are unpushed updates installed on this system.");
-        println!("It is recommended to run 'dnf distro-sync' to clean this up.");
+    let check_obsoleted = args.check_obsoleted || {
+        if let Some(config) = &config {
+            if let Some(cfg) = &config.fuf {
+                if let Some(b) = cfg.check_obsoleted {
+                    b
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    };
 
-        for update in installed_unpushed {
-            println!(" - {}:", update.title);
-            // this unwrap is safe since we definitely inserted a value for every update
-            for build in builds_for_update.get(update.alias.as_str()).unwrap() {
-                println!("   - {}", build);
+    if check_obsoleted {
+        // get updates in "unpushed" state
+        let obsoleted_updates = query_obsoleted(&bodhi, release)?;
+        println!();
+
+        let mut installed_obsoleted: Vec<&Update> = Vec::new();
+        for update in &obsoleted_updates {
+            let mut nvrs: Vec<NVR> = Vec::new();
+
+            for build in &update.builds {
+                let (n, v, r) = parse_nvr(&build.nvr)?;
+                nvrs.push(NVR {
+                    n: n.to_string(),
+                    v: v.to_string(),
+                    r: r.to_string(),
+                });
+            }
+
+            for nvr in nvrs {
+                if installed_packages.contains(&nvr) {
+                    installed_obsoleted.push(&update);
+
+                    builds_for_update
+                        .entry(update.alias.clone())
+                        .and_modify(|e| e.push(nvr.to_string()))
+                        .or_insert(vec![nvr.to_string()]);
+                };
             }
         }
+
+        if !installed_obsoleted.is_empty() {
+            println!("There are obsoleted updates installed on this system.");
+            println!("This probably means your system is not up-to-date.");
+
+            for update in installed_obsoleted {
+                println!(" - {}:", update.title);
+                // this unwrap is safe since we definitely inserted a value for every update
+                for build in builds_for_update.get(update.alias.as_str()).unwrap() {
+                    println!("   - {}", build);
+                }
+            }
+        };
+    };
+
+    let check_unpushed = args.check_unpushed || {
+        if let Some(config) = &config {
+            if let Some(cfg) = &config.fuf {
+                if let Some(b) = cfg.check_unpushed {
+                    b
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    };
+
+    if check_unpushed {
+        // get updates in "unpushed" state
+        let unpushed_updates = query_unpushed(&bodhi, release)?;
+        println!();
+
+        let mut installed_unpushed: Vec<&Update> = Vec::new();
+        for update in &unpushed_updates {
+            let mut nvrs: Vec<NVR> = Vec::new();
+
+            for build in &update.builds {
+                let (n, v, r) = parse_nvr(&build.nvr)?;
+                nvrs.push(NVR {
+                    n: n.to_string(),
+                    v: v.to_string(),
+                    r: r.to_string(),
+                });
+            }
+
+            for nvr in nvrs {
+                if installed_packages.contains(&nvr) {
+                    installed_unpushed.push(&update);
+
+                    builds_for_update
+                        .entry(update.alias.clone())
+                        .and_modify(|e| e.push(nvr.to_string()))
+                        .or_insert(vec![nvr.to_string()]);
+                };
+            }
+        }
+
+        if !installed_unpushed.is_empty() {
+            println!("There are unpushed updates installed on this system.");
+            println!("It is recommended to run 'dnf distro-sync' to clean this up.");
+
+            for update in installed_unpushed {
+                println!(" - {}:", update.title);
+                // this unwrap is safe since we definitely inserted a value for every update
+                for build in builds_for_update.get(update.alias.as_str()).unwrap() {
+                    println!("   - {}", build);
+                }
+            }
+        };
     };
 
     if let Err(error) = set_ignored(&ignored) {

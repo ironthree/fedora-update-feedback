@@ -3,11 +3,26 @@ use std::fs::read_to_string;
 use serde::Deserialize;
 
 /// This struct represents the contents of a `~/.config/fedora.toml` file.
+/// It includes a mandatory `[FAS]` section, and optional sections for tools.
+/// It should look something like this:
+///
+/// ```toml
+/// [FAS]
+/// username = USERNAME
+///
+/// [fedora-update-feedback]
+/// check-obsoleted = false
+/// check-pending = true
+/// check-unpushed = true
+/// ```
 #[derive(Debug, Deserialize)]
 pub struct FedoraConfig {
     /// This section contains information about the user's FAS account.
     #[serde(rename(deserialize = "FAS"))]
     pub fas: FASConfig,
+    /// This section contains configuration for fedora-update-feedback.
+    #[serde(rename(deserialize = "fedora-update-feedback"))]
+    pub fuf: Option<FUFConfig>,
 }
 
 /// This config file section contains information about the current user's FAS account.
@@ -15,6 +30,20 @@ pub struct FedoraConfig {
 pub struct FASConfig {
     /// User name in the fedora accounts system (FAS)
     pub username: String,
+}
+
+/// This config file section contains settings for fedora-update-feedback.
+#[derive(Debug, Deserialize)]
+pub struct FUFConfig {
+    /// Check for installed obsolete updates
+    #[serde(rename = "check-obsoleted")]
+    pub check_obsoleted: Option<bool>,
+    /// Check for installed pending updates
+    #[serde(rename = "check-pending")]
+    pub check_pending: Option<bool>,
+    /// Check for installed unpushed updates
+    #[serde(rename = "check-unpushed")]
+    pub check_unpushed: Option<bool>,
 }
 
 /// This helper function reads and parses the configuration file.

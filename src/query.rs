@@ -25,6 +25,28 @@ pub fn query_testing(bodhi: &BodhiService, release: FedoraRelease) -> Result<Vec
     Ok(testing_updates)
 }
 
+/// This helper function queries updates in "obsolete" state for a specific release, and prints a
+/// nice progress bar to indicate query progress.
+pub fn query_obsoleted(bodhi: &BodhiService, release: FedoraRelease) -> Result<Vec<Update>, String> {
+    let obsolete = "Updates (obsolete)";
+    let obsolete_progress = |p, ps| progress_bar(obsolete, p, ps);
+
+    let obsolete_query = bodhi::query::UpdateQuery::new()
+        .releases(release)
+        .content_type(ContentType::RPM)
+        .status(UpdateStatus::Obsolete)
+        .callback(obsolete_progress);
+
+    let obsolete_updates = match bodhi.query(obsolete_query) {
+        Ok(updates) => updates,
+        Err(error) => {
+            return Err(error.to_string());
+        },
+    };
+
+    Ok(obsolete_updates)
+}
+
 /// This helper function queries updates in "pending" state for a specific release, and prints a
 /// nice progress bar to indicate query progress.
 pub fn query_pending(bodhi: &BodhiService, release: FedoraRelease) -> Result<Vec<Update>, String> {
