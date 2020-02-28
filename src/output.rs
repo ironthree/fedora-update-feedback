@@ -54,15 +54,48 @@ pub fn print_update(update: &Update, builds: &[&str]) {
 
     println!();
 
-    println!("{}", "#".repeat(&update.alias.len() + 6));
-    println!("## {} ##", update.alias);
-    println!("{}", "#".repeat(&update.alias.len() + 6));
-
-    println!();
+    // block for pretty-printing width-constrained strings
     match term_size::dimensions() {
-        Some((w, _)) => println!("{}", textwrap::fill(&update.notes, w)),
-        None => println!("{}", &update.notes),
-    };
+        Some((w, _)) => {
+            // construct a nice header banner for the update
+            let boxie = "#".repeat(w);
+            let header = if update.alias.len() > (w - 6) {
+                format!("{}", &update.alias)
+            } else {
+                let spaces = w - 4 - update.alias.len();
+                let lspaces = " ".repeat(spaces / 2);
+                let rspaces = " ".repeat(if spaces % 2 == 1 { spaces / 2 + 1 } else { spaces / 2 });
+                format!("##{}{}{}##", &lspaces, &update.alias, &rspaces)
+            };
+            let banner = format!("{}\n{}\n{}", &boxie, &header, &boxie);
+            println!("{}", &banner);
+            println!();
+
+            // print human-readable update title
+            println!("{}", textwrap::fill(&update.title, w));
+
+            let title_w = update.title.len();
+            if title_w < w {
+                println!("{}", "-".repeat(title_w));
+            } else {
+                println!("{}", "-".repeat(w));
+            }
+            println!();
+
+            // print user-facing update notes
+            println!("{}", textwrap::fill(&update.notes.trim(), w));
+        },
+
+        None => {
+            println!("## {} ##", update.alias);
+            println!();
+            println!("{}", &update.title);
+            println!();
+            println!("{}", &update.notes);
+        },
+    }
+
+    // block for rendering width-independent table
     println!();
 
     println!(
@@ -91,7 +124,15 @@ pub fn print_update(update: &Update, builds: &[&str]) {
             println!("- {}", url);
 
             if let Some(title) = title {
-                println!("  {}", title);
+                // make sure bug title doesn't contain words that are split across lines
+                match term_size::dimensions() {
+                    Some((w, _)) => {
+                        println!("{}", textwrap::indent(&textwrap::fill(title, w - 2), "  "));
+                    },
+                    None => {
+                        println!("  {}", title);
+                    },
+                };
             };
         }
 
