@@ -27,11 +27,11 @@ pub fn progress_bar(prefix: &str, p: u32, ps: u32) {
     );
 
     print!("\r{}", &line);
-    stdout().flush().unwrap();
+    stdout().flush().expect("Failed to write to stdout.");
 }
 
 /// This helper function pretty-prints an update.
-pub fn print_update(update: &Update, builds: &[String]) {
+pub fn print_update(update: &Update, builds: &[&str]) {
     let date = match &update.date_submitted {
         Some(date) => date.to_string(),
         None => "(None)".to_string(),

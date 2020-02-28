@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::process::Command;
 
 use bodhi::FedoraRelease;
@@ -89,4 +90,54 @@ pub fn get_installed() -> Result<Vec<NVR>, String> {
     }
 
     Ok(packages)
+}
+
+/// This helper function returns a map from source -> binary package NVRs for installed packages.
+pub fn get_src_bin_map() -> Result<HashMap<String, Vec<String>>, String> {
+    // query dnf for installed binary packages and their corresponding source package
+    let output = match Command::new("dnf")
+        .arg("--quiet")
+        .arg("repoquery")
+        .arg("--cacheonly")
+        .arg("--installed")
+        .arg("--qf")
+        .arg("%{source_name}-%{version}-%{release} %{name}-%{version}-%{release}.%{arch}")
+        .output()
+    {
+        Ok(output) => output,
+        Err(error) => return Err(format!("{}", error)),
+    };
+
+    match output.status.code() {
+        Some(x) if x != 0 => return Err(String::from("Failed to query dnf.")),
+        Some(_) => {},
+        None => return Err(String::from("Failed to query dnf.")),
+    }
+
+    let results = match std::str::from_utf8(&output.stdout) {
+        Ok(result) => result,
+        Err(error) => return Err(format!("{}", error)),
+    };
+
+    let lines: Vec<&str> = results.trim().split('\n').collect();
+
+    let mut pkg_map: HashMap<String, Vec<String>> = HashMap::new();
+
+    for line in lines {
+        let parts: Vec<&str> = line.split(' ').collect();
+
+        if parts.len() != 2 {
+            return Err(String::from("Failed to parse dnf output."));
+        };
+
+        let source = parts.get(0).unwrap();
+        let binary = parts.get(1).unwrap();
+
+        pkg_map
+            .entry((*source).to_string())
+            .and_modify(|v| v.push((*binary).to_string()))
+            .or_insert_with(|| vec![(*binary).to_string()]);
+    }
+
+    Ok(pkg_map)
 }

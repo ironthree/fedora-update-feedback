@@ -26,6 +26,7 @@ struct Command {
     clear_ignored: bool,
 }
 
+#[allow(clippy::cognitive_complexity)]
 fn main() -> Result<(), String> {
     let args: Command = Command::from_args();
 
@@ -68,6 +69,8 @@ fn main() -> Result<(), String> {
     // query DNF for installed packages
     println!("Querying dnf for installed packages ...");
     let installed_packages = get_installed()?;
+    // query DNF for source -> binary package map
+    let src_bin_map = get_src_bin_map()?;
 
     println!("Querying bodhi for updates ...");
     let mut updates: Vec<Update> = Vec::new();
@@ -150,7 +153,7 @@ fn main() -> Result<(), String> {
                 builds_for_update
                     .entry(update.alias.clone())
                     .and_modify(|e| e.push(nvr.to_string()))
-                    .or_insert(vec![nvr.to_string()]);
+                    .or_insert_with(|| vec![nvr.to_string()]);
             };
         }
     }
@@ -189,7 +192,14 @@ fn main() -> Result<(), String> {
         // this unwrap is safe since we definitely inserted a value for every update
         let builds = builds_for_update.get(update.alias.as_str()).unwrap();
 
-        let feedback = ask_feedback(&mut rl, update, &builds)?;
+        let mut binaries: Vec<&str> = Vec::new();
+        for build in builds {
+            if let Some(list) = src_bin_map.get(build) {
+                binaries.extend(list.iter().map(|s| s.as_str()));
+            };
+        }
+
+        let feedback = ask_feedback(&mut rl, update, &binaries)?;
 
         match feedback {
             Feedback::Cancel => {
@@ -294,7 +304,7 @@ fn main() -> Result<(), String> {
                     builds_for_update
                         .entry(update.alias.clone())
                         .and_modify(|e| e.push(nvr.to_string()))
-                        .or_insert(vec![nvr.to_string()]);
+                        .or_insert_with(|| vec![nvr.to_string()]);
                 };
             }
         }
@@ -307,7 +317,14 @@ fn main() -> Result<(), String> {
                 println!(" - {}:", update.title);
                 // this unwrap is safe since we definitely inserted a value for every update
                 for build in builds_for_update.get(update.alias.as_str()).unwrap() {
-                    println!("   - {}", build);
+                    let mut binaries: Vec<&str> = Vec::new();
+                    if let Some(list) = src_bin_map.get(build) {
+                        binaries.extend(list.iter().map(|s| s.as_str()));
+                    };
+
+                    for binary in binaries {
+                        println!("   - {}", binary);
+                    }
                 }
             }
         };
@@ -354,7 +371,7 @@ fn main() -> Result<(), String> {
                     builds_for_update
                         .entry(update.alias.clone())
                         .and_modify(|e| e.push(nvr.to_string()))
-                        .or_insert(vec![nvr.to_string()]);
+                        .or_insert_with(|| vec![nvr.to_string()]);
                 };
             }
         }
@@ -367,7 +384,14 @@ fn main() -> Result<(), String> {
                 println!(" - {}:", update.title);
                 // this unwrap is safe since we definitely inserted a value for every update
                 for build in builds_for_update.get(update.alias.as_str()).unwrap() {
-                    println!("   - {}", build);
+                    let mut binaries: Vec<&str> = Vec::new();
+                    if let Some(list) = src_bin_map.get(build) {
+                        binaries.extend(list.iter().map(|s| s.as_str()));
+                    };
+
+                    for binary in binaries {
+                        println!("   - {}", binary);
+                    }
                 }
             }
         };

@@ -56,7 +56,7 @@ pub fn str_to_karma(string: &str) -> Option<Karma> {
 pub fn ask_feedback<'a>(
     rl: &mut rustyline::Editor<()>,
     update: &'a Update,
-    builds: &[String],
+    builds: &[&str],
 ) -> Result<Feedback<'a>, String> {
     print_update(update, builds);
 
@@ -94,7 +94,12 @@ pub fn ask_feedback<'a>(
 
                 if !comment_lines.is_empty() {
                     // if both the last line and the current line are empty, break
-                    if comment_lines.last().unwrap().is_empty() && line.is_empty() {
+                    if comment_lines
+                        .last()
+                        .expect("Something went wrong. There must be a last item in a non-empty iterable.")
+                        .is_empty()
+                        && line.is_empty()
+                    {
                         break;
                     };
                 };
