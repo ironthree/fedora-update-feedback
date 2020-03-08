@@ -60,7 +60,7 @@ pub fn print_update(update: &Update, builds: &[&str]) {
             // construct a nice header banner for the update
             let boxie = "#".repeat(w);
             let header = if update.alias.len() > (w - 6) {
-                format!("{}", &update.alias)
+                update.alias.to_string()
             } else {
                 let spaces = w - 4 - update.alias.len();
                 let lspaces = " ".repeat(spaces / 2);

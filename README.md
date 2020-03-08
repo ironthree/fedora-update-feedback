@@ -14,9 +14,10 @@ comment and karma.
 
 [bodhi-issue]: https://github.com/fedora-infra/bodhi/issues/3888
 
-By default, all updates in `testing` or `pending` state that the user has not
-submitted themselves or has already commented on are presented, sorted by
-ascending submission date (so, oldest to most recent update).
+By default, all updates in the `testing` state that the user has not submitted
+themselves or has already commented on are presented, sorted by ascending
+submission date (so, oldest to most recent update).
+
 
 ### requirements
 
@@ -40,6 +41,33 @@ If both files are not present, the username has to be specified with the
 
 The username is used to authenticate with bodhi, and to filter out updates that
 the user themselves has submitted, or has already commented on.
+
+
+### features
+
+By default, `fedora-update-feedback` queries bodhi for updates for the current
+release that are in the `testing` state.
+
+Some additional options can be set either on the command line, or in a
+`[fedora-update-feedback]` section in the `~/.config/fedora.toml` configuration
+file.
+
+With the `--check-pending` CLI switch or the `check-pending = true`
+configuration option, updates in the `pending` state are also queried (for
+example, if the user has manually installed builds from koji and wants to give
+bodhi feedback for those as well). 
+
+Additionally, with the `--check-obsoleted` and `--check-unpushed` flags (or
+the `check-obsoleted = true` and `check-unpushed` configuration options),
+`fedora-update-feedback` will check if any lingering builds from unpushed
+or obsoleted updates are still installed locally.
+
+With the `save-password = true` configuration option, `fedora-update-feedback`
+will attempt to securely save the FAS password in the login keyring, so it
+does not have to be entered every time. To ignore or overwrite a stored
+password, use the `--ignore-keyring` CLI switch. 
+
+This information is also printed when running `fedora-update-feedback --help`.
 
 
 ### installation

@@ -44,6 +44,9 @@ pub struct FUFConfig {
     /// Check for installed unpushed updates
     #[serde(rename = "check-unpushed")]
     pub check_unpushed: Option<bool>,
+    /// Save password in session keyring
+    #[serde(rename = "save-password")]
+    pub save_password: Option<bool>,
 }
 
 /// This helper function reads and parses the configuration file.

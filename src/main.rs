@@ -7,6 +7,24 @@ use structopt::StructOpt;
 
 use fedora_update_feedback::*;
 
+/// There are some features that are configurable with the config file located at
+/// ~/.config/fedora.toml.
+///
+/// The [fedora-update-feedback] section can contain values for:
+///
+/// check-obsoleted: Corresponds to the --check-obsoleted CLI switch - additionally
+/// checks whether obsoleted updates are installed on the system.
+///
+/// check-pending: Corresponds to the --check-pending CLI switch - additionally
+/// queries bodhi for updates that are still pending.
+///
+/// check-unpushed: Corresponds to the --check-unpushed CLI switch - additionally
+/// checks whether unpushed updates are installed on the system.
+///
+/// save-password: Try to saves the FAS password in the session keyring. To ignore
+/// a password that was stored in the session keyring (for example, if you changed
+/// it, or made a typo when it was prompted), use the --ignore-keyring CLI switch
+/// to ask for the password again.
 #[derive(Debug, StructOpt)]
 struct Command {
     /// Override or provide FAS username
@@ -24,6 +42,95 @@ struct Command {
     /// Clear ignored updates
     #[structopt(long, short = "i")]
     clear_ignored: bool,
+    /// Ignore password stored in session keyring
+    #[structopt(long)]
+    ignore_keyring: bool,
+}
+
+/// This function prompts the user for their FAS password.
+fn read_password() -> String {
+    rpassword::prompt_password_stdout("FAS Password: ").unwrap()
+}
+
+/// This function asks for and stores the password in the session keyring.
+fn get_store_password(clear: bool) -> Result<String, String> {
+    let ss = match secret_service::SecretService::new(secret_service::EncryptionType::Dh) {
+        Ok(ss) => ss,
+        Err(error) => {
+            println!("Failed to initialize SecretService client: {}", error);
+            return Ok(read_password());
+        }
+    };
+
+    let collection = match ss.get_default_collection() {
+        Ok(c) => c,
+        Err(error) => {
+            println!("Failed to query SecretService: {}", error);
+            return Ok(read_password());
+        }
+    };
+
+    let attributes = vec![("fedora-update-feedback", "FAS Password")];
+
+    let store = |password: &str, replace: bool| {
+        if let Err(error) = collection.create_item(
+            "fedora-update-feedback",
+            attributes.clone(),
+            &password.as_bytes(),
+            replace,
+            "password",
+        ) {
+            println!("Failed to save password with SecretService: {}", error);
+        }
+    };
+
+    let items = match collection.search_items(attributes.clone()) {
+        Ok(items) => items,
+        Err(error) => {
+            format!("Failed to query SecretService: {}", error);
+            return Ok(read_password());
+        }
+    };
+
+    if clear {
+        let password = read_password();
+        store(&password, true);
+        return Ok(password);
+    };
+
+    let password = match items.get(0) {
+        Some(item) => {
+            match item.get_secret() {
+                Ok(secret) => match String::from_utf8(secret) {
+                    Ok(valid) => valid,
+                    Err(error) => {
+                        println!("Stored password was not valid UTF-8: {}", error);
+
+                        let password = read_password();
+                        store(&password, true);
+
+                        password
+                    },
+                },
+                Err(error) => {
+                    println!("Password was not stored correctly: {}", error);
+
+                    let password = read_password();
+                    store(&password, true);
+
+                    password
+                },
+            }
+        },
+        None => {
+            let password = read_password();
+            store(&password, false);
+
+            password
+        },
+    };
+
+    Ok(password)
 }
 
 #[allow(clippy::cognitive_complexity)]
@@ -48,8 +155,17 @@ fn main() -> Result<(), String> {
 
     println!("Username: {}", &username);
 
-    // read password from command line
-    let password = rpassword::prompt_password_stdout("FAS Password: ").unwrap();
+    // read password from libsecret-1 or fall back to command line prompt
+    let password = match &config {
+        Some(config) => match &config.fuf {
+            Some(fuf) => match fuf.save_password {
+                Some(x) if x => get_store_password(args.ignore_keyring)?,
+                _ => read_password(),
+            },
+            None => read_password(),
+        },
+        None => read_password(),
+    };
 
     // query bodhi for packages in updates-testing
     println!("Authenticating with bodhi ...");
