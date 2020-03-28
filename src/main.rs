@@ -59,7 +59,7 @@ fn get_store_password(clear: bool) -> Result<String, String> {
         Err(error) => {
             println!("Failed to initialize SecretService client: {}", error);
             return Ok(read_password());
-        }
+        },
     };
 
     let collection = match ss.get_default_collection() {
@@ -67,7 +67,7 @@ fn get_store_password(clear: bool) -> Result<String, String> {
         Err(error) => {
             println!("Failed to query SecretService: {}", error);
             return Ok(read_password());
-        }
+        },
     };
 
     let attributes = vec![("fedora-update-feedback", "FAS Password")];
@@ -89,7 +89,7 @@ fn get_store_password(clear: bool) -> Result<String, String> {
         Err(error) => {
             format!("Failed to query SecretService: {}", error);
             return Ok(read_password());
-        }
+        },
     };
 
     if clear {
@@ -99,28 +99,26 @@ fn get_store_password(clear: bool) -> Result<String, String> {
     };
 
     let password = match items.get(0) {
-        Some(item) => {
-            match item.get_secret() {
-                Ok(secret) => match String::from_utf8(secret) {
-                    Ok(valid) => valid,
-                    Err(error) => {
-                        println!("Stored password was not valid UTF-8: {}", error);
-
-                        let password = read_password();
-                        store(&password, true);
-
-                        password
-                    },
-                },
+        Some(item) => match item.get_secret() {
+            Ok(secret) => match String::from_utf8(secret) {
+                Ok(valid) => valid,
                 Err(error) => {
-                    println!("Password was not stored correctly: {}", error);
+                    println!("Stored password was not valid UTF-8: {}", error);
 
                     let password = read_password();
                     store(&password, true);
 
                     password
                 },
-            }
+            },
+            Err(error) => {
+                println!("Password was not stored correctly: {}", error);
+
+                let password = read_password();
+                store(&password, true);
+
+                password
+            },
         },
         None => {
             let password = read_password();

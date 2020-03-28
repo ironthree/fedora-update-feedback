@@ -136,6 +136,7 @@ pub fn ask_feedback<'a>(
             None => "(None)",
         };
 
+        println!();
         println!("{}: {}", bug.bug_id, bug_title);
         if let Some(input) = str_to_karma(get_input("Bug Feedback (+1, 0, -1)").as_str()) {
             bug_feedback.push((bug.bug_id, input));
@@ -147,6 +148,7 @@ pub fn ask_feedback<'a>(
     let mut testcase_feedback: Vec<(&str, Karma)> = Vec::new();
     if let Some(test_cases) = &update.test_cases {
         for test_case in test_cases {
+            println!();
             println!("{}", &test_case.name);
 
             if let Some(input) = str_to_karma(get_input("Test Case Feedback (+1, 0, -1)").as_str()) {
@@ -156,6 +158,8 @@ pub fn ask_feedback<'a>(
             };
         }
     }
+
+    println!();
 
     Ok(Feedback::Values {
         comment,

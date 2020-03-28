@@ -1,6 +1,6 @@
 use std::io::{stdout, Write};
 
-use bodhi::Update;
+use bodhi::{Comment, Update};
 
 /// This function draws a pretty progress bar with this format:
 ///
@@ -32,9 +32,14 @@ pub fn progress_bar(prefix: &str, p: u32, ps: u32) {
 
 /// This helper function pretty-prints an update.
 pub fn print_update(update: &Update, builds: &[&str]) {
-    let date = match &update.date_submitted {
+    let submitted_date = match &update.date_submitted {
         Some(date) => date.to_string(),
         None => "(None)".to_string(),
+    };
+
+    let pushed_date = match &update.date_pushed {
+        Some(date) => date.to_string(),
+        None => "(not yet pushed)".to_string(),
     };
 
     let karma = match update.karma {
@@ -43,7 +48,14 @@ pub fn print_update(update: &Update, builds: &[&str]) {
     };
 
     let stable_karma = match update.stable_karma {
-        Some(karma) => karma.to_string(),
+        Some(karma) => {
+            if karma > 0 {
+                format!("+{}", karma)
+            } else {
+                // this should never happen, but better print weird things than wrong things
+                karma.to_string()
+            }
+        },
         None => "?".to_string(),
     };
 
@@ -72,7 +84,7 @@ pub fn print_update(update: &Update, builds: &[&str]) {
             println!();
 
             // print human-readable update title
-            println!("{}", textwrap::fill(&update.title, w));
+            println!("{}", textwrap::fill(&update.title, w - 1));
 
             let title_w = update.title.len();
             if title_w < w {
@@ -83,7 +95,7 @@ pub fn print_update(update: &Update, builds: &[&str]) {
             println!();
 
             // print user-facing update notes
-            println!("{}", textwrap::fill(&update.notes.trim(), w));
+            println!("{}", textwrap::fill(&update.notes.trim(), w - 1));
         },
 
         None => {
@@ -103,7 +115,8 @@ pub fn print_update(update: &Update, builds: &[&str]) {
         &update.alias
     );
     println!("Update type:    {}", update.update_type);
-    println!("Submitted:      {}", date);
+    println!("Submitted:      {}", submitted_date);
+    println!("Pushed:         {}", pushed_date);
     println!("Submitter:      {}", update.user.name);
     println!("Karma:          {}", karma);
     println!("Stable karma:   {}", stable_karma);
@@ -118,7 +131,7 @@ pub fn print_update(update: &Update, builds: &[&str]) {
             .map(|b| (b.url().to_string(), b.title.as_ref()))
             .collect();
 
-        println!("Bugs:");
+        println!("Associated bugs:");
 
         for (url, title) in bugs {
             println!("- {}", url);
@@ -127,7 +140,7 @@ pub fn print_update(update: &Update, builds: &[&str]) {
                 // make sure bug title doesn't contain words that are split across lines
                 match term_size::dimensions() {
                     Some((w, _)) => {
-                        println!("{}", textwrap::indent(&textwrap::fill(title, w - 2), "  "));
+                        print!("{}", textwrap::indent(&textwrap::fill(title.trim(), w - 3), "  "));
                     },
                     None => {
                         println!("  {}", title);
@@ -143,7 +156,7 @@ pub fn print_update(update: &Update, builds: &[&str]) {
         Some(ts) if !ts.is_empty() => {
             let test_cases: Vec<String> = ts.iter().map(|t| t.url().to_string()).collect();
 
-            println!("Test cases:");
+            println!("Associated test cases:");
 
             for url in test_cases {
                 println!("- {}", url);
@@ -154,10 +167,37 @@ pub fn print_update(update: &Update, builds: &[&str]) {
         _ => {},
     };
 
-    println!("Builds:");
+    println!("Locally installed packages contained in this update:");
     for build in builds {
         println!("- {}", build);
     }
+
+    if let Some(comments) = &update.comments {
+        println!();
+        println!("Previous comments:");
+
+        let mut sorted: Vec<&Comment> = Vec::new();
+        for comment in comments {
+            sorted.push(comment);
+        }
+        sorted.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+
+        for comment in sorted {
+            println!("- {} ({}): {}", &comment.user.name, &comment.timestamp, &comment.karma);
+
+            match term_size::dimensions() {
+                Some((w, _)) => {
+                    print!(
+                        "{}",
+                        textwrap::indent(&textwrap::fill(&comment.text.trim(), w - 3), "  ")
+                    );
+                },
+                None => {
+                    println!("{}", &comment.text.trim());
+                },
+            };
+        }
+    };
 
     println!();
 }
