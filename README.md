@@ -72,9 +72,11 @@ This information is also printed when running `fedora-update-feedback --help`.
 
 ### installation
 
-> RPM packages are now available on COPR:
-> 
-> <https://copr.fedorainfracloud.org/coprs/decathorpe/fedora-update-feedback/>
+**RPM packages**:
+
+RPM packages are now available from the official fedora repositories.
+
+**Compiling manually**:
 
 To compile the program, first install `cargo` (the build tool, also pulls in
 the Rust compiler) and `openssl-devel` (used by the OpenSSL rust bindings).
