@@ -12,8 +12,6 @@ This project is inspired by [fedora-easy-karma][f-e-k], but with more features.
 It allows submitting feedback for bugs and test cases in addition to providing a
 comment and karma.
 
-[bodhi-issue]: https://github.com/fedora-infra/bodhi/issues/3888
-
 By default, all updates in the `testing` state that the user has not submitted
 themselves or has already commented on are presented, sorted by ascending
 submission date (so, oldest to most recent update).
@@ -84,8 +82,8 @@ the Rust compiler) and `openssl-devel` (used by the OpenSSL rust bindings).
 To download, build, and install the latest version from <https://crates.io>,
 just run `cargo install fedora-update-feedback`.
 
-To build from the sources provided on GitHub, download the sources
-(recommended: tarball of the latest release from GitHub), and easily build
+To build from the sources provided on <https://pagure.io>, download the sources
+(recommended: tarball of the latest release from pagure), and easily build
 and install the binary for yourself by running `cargo install --path .` in
 the source directory.
 
