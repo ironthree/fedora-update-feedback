@@ -1,3 +1,10 @@
+# Release 0.5.2 "Storage Area" (Apr. 06, 2020)
+
+Incremental improvements:
+
+- show how long updates have been installed locally, in addition to the dates
+  when they were submitted and pushed in bodhi
+
 # Release 0.5.1 "Innit Nice" (Mar. 28, 2020)
 
 Incremental improvements:
