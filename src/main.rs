@@ -297,6 +297,9 @@ fn main() -> Result<(), String> {
     // remove old updates from ignored list
     ignored.retain(|i| installed_updates.iter().map(|u| &u.alias).any(|x| x == i));
 
+    // query dnf for when the updates were installed
+    let install_times = get_installation_times()?;
+
     for update in installed_updates {
         if ignored.contains(&update.alias) {
             println!("Skipping ignored update: {}", &update.alias);
@@ -313,7 +316,7 @@ fn main() -> Result<(), String> {
             };
         }
 
-        let feedback = ask_feedback(&mut rl, update, &binaries)?;
+        let feedback = ask_feedback(&mut rl, update, &binaries, &install_times)?;
 
         match feedback {
             Feedback::Cancel => {

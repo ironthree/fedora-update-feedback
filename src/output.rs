@@ -1,6 +1,8 @@
+use std::collections::HashMap;
 use std::io::{stdout, Write};
 
 use bodhi::{Comment, Update};
+use chrono::{DateTime, Duration, Local};
 
 /// This function draws a pretty progress bar with this format:
 ///
@@ -30,8 +32,50 @@ pub fn progress_bar(prefix: &str, p: u32, ps: u32) {
     stdout().flush().expect("Failed to write to stdout.");
 }
 
+/// This helper function returns the duration from a datetime that lies in the past until now.
+fn duration_until_now(datetime: &DateTime<Local>) -> Duration {
+    let result = Local::now() - datetime.to_owned();
+
+    if result <= Duration::seconds(0) {
+        Duration::seconds(0)
+    } else {
+        result
+    }
+}
+
+/// This helper handles proper pluralization of number terms.
+fn proper_plural(number: i64, term: &str) -> String {
+    if number == -1 || number == 1 {
+        format!("{} {}", number, term)
+    } else {
+        format!("{} {}s", number, term)
+    }
+}
+
+/// This helper function returns a pretty "duration" format.
+fn pretty_duration(duration: Duration) -> String {
+    if duration >= Duration::days(1) {
+        let days = duration.num_days();
+        let hours = (duration - Duration::days(days)).num_hours();
+        format!("{} and {}", proper_plural(days, "day"), proper_plural(hours, "hour"))
+    } else if duration >= Duration::hours(1) {
+        let hours = duration.num_hours();
+        let minutes = (duration - Duration::hours(hours)).num_minutes();
+        format!(
+            "{} and {}",
+            proper_plural(hours, "hour"),
+            proper_plural(minutes, "minute")
+        )
+    } else if duration >= Duration::minutes(1) {
+        let minutes = duration.num_minutes();
+        format!("{}", proper_plural(minutes, "minute"))
+    } else {
+        format!("less than a minute")
+    }
+}
+
 /// This helper function pretty-prints an update.
-pub fn print_update(update: &Update, builds: &[&str]) {
+pub fn print_update(update: &Update, builds: &[&str], install_times: &HashMap<String, DateTime<Local>>) {
     let submitted_date = match &update.date_submitted {
         Some(date) => date.to_string(),
         None => "(None)".to_string(),
@@ -169,7 +213,15 @@ pub fn print_update(update: &Update, builds: &[&str]) {
 
     println!("Locally installed packages contained in this update:");
     for build in builds {
-        println!("- {}", build);
+        match install_times.get(*build) {
+            Some(datetime) => {
+                println!("- {}", build);
+                println!("  installed {} ago", pretty_duration(duration_until_now(datetime)));
+            },
+            None => {
+                println!("- {}", build);
+            },
+        }
     }
 
     if let Some(comments) = &update.comments {

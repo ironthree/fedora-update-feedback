@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::process::Command;
 
 use bodhi::FedoraRelease;
+use chrono::{DateTime, Local, TimeZone};
 
 use super::{parse_filename, NVR};
 
@@ -137,6 +138,58 @@ pub fn get_src_bin_map() -> Result<HashMap<String, Vec<String>>, String> {
             .entry((*source).to_string())
             .and_modify(|v| v.push((*binary).to_string()))
             .or_insert_with(|| vec![(*binary).to_string()]);
+    }
+
+    Ok(pkg_map)
+}
+
+/// This helper function returns a map from binary packages to their installation times.
+pub fn get_installation_times() -> Result<HashMap<String, DateTime<Local>>, String> {
+    // query dnf for installed binary packages and their corresponding installation dates
+    let output = match Command::new("dnf")
+        .arg("--quiet")
+        .arg("repoquery")
+        .arg("--cacheonly")
+        .arg("--installed")
+        .arg("--qf")
+        .arg("%{name}-%{version}-%{release}.%{arch}\t%{INSTALLTIME}")
+        .output()
+    {
+        Ok(output) => output,
+        Err(error) => return Err(format!("{}", error)),
+    };
+
+    match output.status.code() {
+        Some(x) if x != 0 => return Err(String::from("Failed to query dnf.")),
+        Some(_) => {},
+        None => return Err(String::from("Failed to query dnf.")),
+    }
+
+    let results = match std::str::from_utf8(&output.stdout) {
+        Ok(result) => result,
+        Err(error) => return Err(format!("{}", error)),
+    };
+
+    let lines: Vec<&str> = results.trim().split('\n').collect();
+
+    let mut pkg_map: HashMap<String, DateTime<Local>> = HashMap::new();
+
+    for line in lines {
+        let parts: Vec<&str> = line.split('\t').collect();
+
+        if parts.len() != 2 {
+            return Err(format!("Failed to parse dnf output: {}", line));
+        };
+
+        let binary = parts.get(0).unwrap();
+        let installtime = parts.get(1).unwrap();
+
+        let local_time = match Local.datetime_from_str(installtime, "%Y-%m-%d %H:%M") {
+            Ok(datetime) => datetime,
+            Err(error) => return Err(format!("Failed to parse dnf output: {}", error)),
+        };
+
+        pkg_map.entry((*binary).to_string()).or_insert(local_time);
     }
 
     Ok(pkg_map)

@@ -1,6 +1,8 @@
+use std::collections::HashMap;
 use std::io::{stdin, stdout, Write};
 
 use bodhi::{Karma, Update};
+use chrono::{DateTime, Local};
 
 use super::print_update;
 
@@ -57,8 +59,9 @@ pub fn ask_feedback<'a>(
     rl: &mut rustyline::Editor<()>,
     update: &'a Update,
     builds: &[&str],
+    install_times: &HashMap<String, DateTime<Local>>,
 ) -> Result<Feedback<'a>, String> {
-    print_update(update, builds);
+    print_update(update, builds, install_times);
 
     enum Action {
         Skip,
