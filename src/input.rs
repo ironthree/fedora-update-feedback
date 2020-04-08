@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::io::{stdin, stdout, Write};
 
 use bodhi::{Karma, Update};
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Utc};
 
 use super::print_update;
 
@@ -55,11 +55,11 @@ pub fn str_to_karma(string: &str) -> Option<Karma> {
 ///    automatically; two empty lines or EOF (`Ctrl-D`) ends comment input)
 ///
 /// If enabled at compile time, it also asks for bug and testcase feedback.
-pub fn ask_feedback<'a>(
+pub fn ask_feedback<'a, S: std::hash::BuildHasher>(
     rl: &mut rustyline::Editor<()>,
     update: &'a Update,
     builds: &[&str],
-    install_times: &HashMap<String, DateTime<Local>>,
+    install_times: &HashMap<String, DateTime<Utc>, S>,
 ) -> Result<Feedback<'a>, String> {
     print_update(update, builds, install_times);
 

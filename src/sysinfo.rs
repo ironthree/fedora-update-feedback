@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::process::Command;
 
 use bodhi::FedoraRelease;
-use chrono::{DateTime, Local, TimeZone};
+use chrono::{DateTime, TimeZone, Utc};
 
 use super::{parse_filename, NVR};
 
@@ -144,7 +144,7 @@ pub fn get_src_bin_map() -> Result<HashMap<String, Vec<String>>, String> {
 }
 
 /// This helper function returns a map from binary packages to their installation times.
-pub fn get_installation_times() -> Result<HashMap<String, DateTime<Local>>, String> {
+pub fn get_installation_times() -> Result<HashMap<String, DateTime<Utc>>, String> {
     // query dnf for installed binary packages and their corresponding installation dates
     let output = match Command::new("dnf")
         .arg("--quiet")
@@ -172,7 +172,7 @@ pub fn get_installation_times() -> Result<HashMap<String, DateTime<Local>>, Stri
 
     let lines: Vec<&str> = results.trim().split('\n').collect();
 
-    let mut pkg_map: HashMap<String, DateTime<Local>> = HashMap::new();
+    let mut pkg_map: HashMap<String, DateTime<Utc>> = HashMap::new();
 
     for line in lines {
         let parts: Vec<&str> = line.split('\t').collect();
@@ -184,12 +184,12 @@ pub fn get_installation_times() -> Result<HashMap<String, DateTime<Local>>, Stri
         let binary = parts.get(0).unwrap();
         let installtime = parts.get(1).unwrap();
 
-        let local_time = match Local.datetime_from_str(installtime, "%Y-%m-%d %H:%M") {
+        let datetime = match Utc.datetime_from_str(installtime, "%Y-%m-%d %H:%M") {
             Ok(datetime) => datetime,
             Err(error) => return Err(format!("Failed to parse dnf output: {}", error)),
         };
 
-        pkg_map.entry((*binary).to_string()).or_insert(local_time);
+        pkg_map.entry((*binary).to_string()).or_insert(datetime);
     }
 
     Ok(pkg_map)

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::io::{stdout, Write};
 
 use bodhi::{Comment, Update};
-use chrono::{DateTime, Duration, Local};
+use chrono::{DateTime, Duration, Utc};
 
 /// This function draws a pretty progress bar with this format:
 ///
@@ -33,8 +33,8 @@ pub fn progress_bar(prefix: &str, p: u32, ps: u32) {
 }
 
 /// This helper function returns the duration from a datetime that lies in the past until now.
-fn duration_until_now(datetime: &DateTime<Local>) -> Duration {
-    let result = Local::now() - datetime.to_owned();
+fn duration_until_now(datetime: &DateTime<Utc>) -> Duration {
+    let result = Utc::now() - datetime.to_owned();
 
     if result <= Duration::seconds(0) {
         Duration::seconds(0)
@@ -68,14 +68,18 @@ fn pretty_duration(duration: Duration) -> String {
         )
     } else if duration >= Duration::minutes(1) {
         let minutes = duration.num_minutes();
-        format!("{}", proper_plural(minutes, "minute"))
+        proper_plural(minutes, "minute")
     } else {
-        format!("less than a minute")
+        String::from("less than a minute")
     }
 }
 
 /// This helper function pretty-prints an update.
-pub fn print_update(update: &Update, builds: &[&str], install_times: &HashMap<String, DateTime<Local>>) {
+pub fn print_update<S: std::hash::BuildHasher>(
+    update: &Update,
+    builds: &[&str],
+    install_times: &HashMap<String, DateTime<Utc>, S>,
+) {
     let submitted_date = match &update.date_submitted {
         Some(date) => date.to_string(),
         None => "(None)".to_string(),
