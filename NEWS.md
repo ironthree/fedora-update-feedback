@@ -1,3 +1,10 @@
+# Release 0.5.3 "Off Set" (Apr. 08, 2020)
+
+Bugfixes:
+
+- fix the wrong offset for "installtime" calculation (dnf returns UTC, not the
+  local time)
+
 # Release 0.5.2 "Storage Area" (Apr. 06, 2020)
 
 Incremental improvements:
