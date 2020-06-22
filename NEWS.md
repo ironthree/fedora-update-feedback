@@ -1,3 +1,9 @@
+# Release 0.5.4 "Dep Bump" (June 22, 2020)
+
+Improvements:
+
+- bump bodhi dependency to ^0.6 for bodhi 5.4.0 server support
+
 # Release 0.5.3 "Off Set" (Apr. 08, 2020)
 
 Bugfixes:
