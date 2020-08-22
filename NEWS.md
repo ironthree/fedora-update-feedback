@@ -1,3 +1,9 @@
+# Release 0.5.5 "TL;DR" (June 22, 2020)
+
+Improvements:
+
+- include package summaries when printing updates
+
 # Release 0.5.4 "Dep Bump" (June 22, 2020)
 
 Improvements:
