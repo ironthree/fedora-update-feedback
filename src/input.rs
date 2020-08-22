@@ -59,9 +59,10 @@ pub fn ask_feedback<'a, S: std::hash::BuildHasher>(
     rl: &mut rustyline::Editor<()>,
     update: &'a Update,
     builds: &[&str],
+    summaries: &HashMap<String, String, S>,
     install_times: &HashMap<String, DateTime<Utc>, S>,
 ) -> Result<Feedback<'a>, String> {
-    print_update(update, builds, install_times);
+    print_update(update, builds, summaries, install_times);
 
     enum Action {
         Skip,

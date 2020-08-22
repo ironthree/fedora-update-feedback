@@ -93,6 +93,50 @@ pub fn get_installed() -> Result<Vec<NVR>, String> {
     Ok(packages)
 }
 
+/// This helper function queries `dnf` for the `Summary` header of installed packages.
+pub fn get_summaries() -> Result<HashMap<String, String>, String> {
+    // query dnf for installed packages and their summaries
+    let output = match Command::new("dnf")
+        .arg("--quiet")
+        .arg("repoquery")
+        .arg("--cacheonly")
+        .arg("--installed")
+        .arg("--qf")
+        .arg("%{name}\t%{summary}")
+        .output()
+    {
+        Ok(output) => output,
+        Err(error) => return Err(error.to_string()),
+    };
+
+    match output.status.code() {
+        Some(x) if x != 0 => return Err(String::from("Failed to query dnf.")),
+        Some(_) => {},
+        None => return Err(String::from("Failed to query dnf.")),
+    }
+
+    let results = match std::str::from_utf8(&output.stdout) {
+        Ok(result) => result,
+        Err(error) => return Err(error.to_string()),
+    };
+
+    let lines: Vec<&str> = results.trim().split('\n').collect();
+
+    let mut summaries: HashMap<String, String> = HashMap::new();
+
+    for line in lines {
+        let mut split = line.split('\t');
+        match (split.next(), split.next(), split.next()) {
+            (Some(name), Some(summary), None) => {
+                summaries.insert(name.to_string(), summary.to_string());
+            },
+            _ => return Err(format!("Failed to parse: {}", line)),
+        }
+    }
+
+    Ok(summaries)
+}
+
 /// This helper function returns a map from source -> binary package NVRs for installed packages.
 pub fn get_src_bin_map() -> Result<HashMap<String, Vec<String>>, String> {
     // query dnf for installed binary packages and their corresponding source package
@@ -106,7 +150,7 @@ pub fn get_src_bin_map() -> Result<HashMap<String, Vec<String>>, String> {
         .output()
     {
         Ok(output) => output,
-        Err(error) => return Err(format!("{}", error)),
+        Err(error) => return Err(error.to_string()),
     };
 
     match output.status.code() {

@@ -1,6 +1,5 @@
 #![warn(missing_docs)]
-#![warn(clippy::result_unwrap_used)]
-#![warn(clippy::option_unwrap_used)]
+#![warn(clippy::unwrap_used)]
 
 //! This crate contains helper functionality that's used by the `fedora-update-feedback` binary.
 //! It's contents are probably not useful for external use. But if something turns out to be

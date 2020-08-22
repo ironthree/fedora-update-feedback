@@ -4,6 +4,8 @@ use std::io::{stdout, Write};
 use bodhi::{Comment, Update};
 use chrono::{DateTime, Duration, Utc};
 
+use crate::parse::parse_nvr;
+
 /// This function draws a pretty progress bar with this format:
 ///
 /// ` Prefix: [ =========                     ] 22% `
@@ -78,6 +80,7 @@ fn pretty_duration(duration: Duration) -> String {
 pub fn print_update<S: std::hash::BuildHasher>(
     update: &Update,
     builds: &[&str],
+    summaries: &HashMap<String, String, S>,
     install_times: &HashMap<String, DateTime<Utc>, S>,
 ) {
     let submitted_date = match &update.date_submitted {
@@ -217,14 +220,20 @@ pub fn print_update<S: std::hash::BuildHasher>(
 
     println!("Locally installed packages contained in this update:");
     for build in builds {
-        match install_times.get(*build) {
-            Some(datetime) => {
-                println!("- {}", build);
-                println!("  installed {} ago", pretty_duration(duration_until_now(datetime)));
-            },
-            None => {
-                println!("- {}", build);
-            },
+        let name = parse_nvr(build)
+            .unwrap_or_else(|_| panic!(format!("Failed to parse build NVR: {}", build)))
+            .0;
+        let summary = summaries.get(name);
+        let install_time = install_times.get(*build);
+
+        println!("- {}", build);
+
+        if let Some(string) = summary {
+            println!("  {}", string);
+        }
+
+        if let Some(datetime) = install_time {
+            println!("  installed {} ago", pretty_duration(duration_until_now(datetime)));
         }
     }
 
