@@ -8,9 +8,10 @@ edition = "2018"
 
 authors = ["Fabio Valentini <decathorpe@gmail.com>"]
 readme = "README.md"
+exclude = ["/.github/"]
 categories = ["command-line-utilities"]
 keywords = ["fedora", "bodhi", "updates", "feedback"]
-repository = "https://pagure.io/ironthree/fedora-update-feedback"
+repository = "https://github.com/ironthree/fedora-update-feedback"
 
 [dependencies]
 bodhi = "^0.6"

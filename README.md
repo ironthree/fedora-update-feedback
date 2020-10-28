@@ -82,8 +82,8 @@ the Rust compiler) and `openssl-devel` (used by the OpenSSL rust bindings).
 To download, build, and install the latest version from <https://crates.io>,
 just run `cargo install fedora-update-feedback`.
 
-To build from the sources provided on <https://pagure.io>, download the sources
-(recommended: tarball of the latest release from pagure), and easily build
+To build from the sources provided on <https://github.com>, download the sources
+(recommended: tarball of the latest release from GitHub), and easily build
 and install the binary for yourself by running `cargo install --path .` in
 the source directory.
 
