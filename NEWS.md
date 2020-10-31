@@ -1,3 +1,10 @@
+# Release 0.6.0 "Lib Drop" (October 31, 2020)
+
+Breaking Changes:
+
+- refactored code into a binary-only crate
+- dropped unused `fedora_update_feedback` library component
+
 # Release 0.5.5 "TL;DR" (June 22, 2020)
 
 Improvements:
