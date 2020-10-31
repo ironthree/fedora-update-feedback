@@ -4,7 +4,7 @@ use std::io::{stdin, stdout, Write};
 use bodhi::{Karma, Update};
 use chrono::{DateTime, Utc};
 
-use super::print_update;
+use crate::output::print_update;
 
 /// This enum contains all feedback information for an update that's been parsed from CLI input.
 pub enum Feedback<'a> {

@@ -1,6 +1,6 @@
 use bodhi::*;
 
-use super::progress_bar;
+use crate::output::progress_bar;
 
 /// This helper function queries updates in "testing" state for a specific release, and prints a
 /// nice progress bar to indicate query progress.

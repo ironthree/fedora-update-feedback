@@ -1,3 +1,13 @@
+#![warn(missing_docs)]
+#![warn(clippy::unwrap_used)]
+
+//! This crate contains the `fedora-update-feedback` binary and some helper functionality. If
+//! something turns out to be generally useful, it can be upstreamed into either the
+//! [`fedora`][fedora-rs] or [`bodhi`][bodhi] crates.
+//!
+//! [fedora-rs]: https://crates.io/crates/fedora
+//! [bodhi-rs]: https://crates.io/crates/bodhi
+
 use std::collections::HashMap;
 
 use bodhi::error::QueryError;
@@ -5,7 +15,22 @@ use bodhi::*;
 
 use structopt::StructOpt;
 
-use fedora_update_feedback::*;
+mod config;
+mod ignore;
+mod input;
+mod nvr;
+mod output;
+mod parse;
+mod query;
+mod sysinfo;
+
+use config::{get_config, get_legacy_username};
+use ignore::{get_ignored, set_ignored};
+use input::{ask_feedback, Feedback};
+use nvr::NVR;
+use parse::parse_nvr;
+use query::{query_obsoleted, query_pending, query_testing, query_unpushed};
+use sysinfo::{get_installation_times, get_installed, get_release, get_src_bin_map, get_summaries};
 
 /// There are some features that are configurable with the config file located at
 /// ~/.config/fedora.toml.
@@ -49,7 +74,7 @@ struct Command {
 
 /// This function prompts the user for their FAS password.
 fn read_password() -> String {
-    rpassword::prompt_password_stdout("FAS Password: ").unwrap()
+    rpassword::prompt_password_stdout("FAS Password: ").expect("Failed to read password from stdin.")
 }
 
 /// This function asks for and stores the password in the session keyring.

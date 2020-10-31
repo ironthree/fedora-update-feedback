@@ -4,7 +4,8 @@ use std::process::Command;
 use bodhi::FedoraRelease;
 use chrono::{DateTime, TimeZone, Utc};
 
-use super::{parse_filename, NVR};
+use crate::nvr::NVR;
+use crate::parse::parse_filename;
 
 /// This helper function queries RPM for the value of `%{fedora}` on the current system.
 pub fn get_release() -> Result<FedoraRelease, String> {
