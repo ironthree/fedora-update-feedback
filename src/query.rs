@@ -10,7 +10,7 @@ pub fn query_testing(bodhi: &BodhiService, release: FedoraRelease) -> Result<Vec
     let testing_progress = |p, ps| progress_bar(testing, p, ps);
 
     let testing_query = bodhi::query::UpdateQuery::new()
-        .releases(release)
+        .releases(vec![release])
         .content_type(ContentType::RPM)
         .status(UpdateStatus::Testing)
         .callback(testing_progress);
@@ -32,7 +32,7 @@ pub fn query_obsoleted(bodhi: &BodhiService, release: FedoraRelease) -> Result<V
     let obsolete_progress = |p, ps| progress_bar(obsolete, p, ps);
 
     let obsolete_query = bodhi::query::UpdateQuery::new()
-        .releases(release)
+        .releases(vec![release])
         .content_type(ContentType::RPM)
         .status(UpdateStatus::Obsolete)
         .callback(obsolete_progress);
@@ -54,7 +54,7 @@ pub fn query_pending(bodhi: &BodhiService, release: FedoraRelease) -> Result<Vec
     let pending_progress = |p, ps| progress_bar(pending, p, ps);
 
     let pending_query = bodhi::query::UpdateQuery::new()
-        .releases(release)
+        .releases(vec![release])
         .content_type(ContentType::RPM)
         .status(UpdateStatus::Pending)
         .callback(pending_progress);
@@ -76,7 +76,7 @@ pub fn query_unpushed(bodhi: &BodhiService, release: FedoraRelease) -> Result<Ve
     let unpushed_progress = |p, ps| progress_bar(unpushed, p, ps);
 
     let unpushed_query = bodhi::query::UpdateQuery::new()
-        .releases(release)
+        .releases(vec![release])
         .content_type(ContentType::RPM)
         .status(UpdateStatus::Unpushed)
         .callback(unpushed_progress);
