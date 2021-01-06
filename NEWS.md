@@ -1,3 +1,18 @@
+# Release 1.0.1 "Upgrade" (January 06, 2021)
+
+Internal changes:
+
+- update `secret-service` to `2.0` (with the new `zbus`backend!)
+- update `textwrap` to `0.13`
+
+# Release 1.0.0 "Stability" (November 30, 2020)
+
+Internal changes:
+
+- update `bodhi` to `1.0`
+- update `dirs` to `3.0.1`
+- update `rpassword` to `5.0.0`
+
 # Release 0.6.0 "Lib Drop" (October 31, 2020)
 
 Breaking Changes:
