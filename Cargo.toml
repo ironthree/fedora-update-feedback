@@ -19,7 +19,7 @@ chrono = "^0.4"
 dirs = "^3.0.1"
 rpassword = "^5.0.0"
 rustyline = "^6.0.0"
-secret-service = "^1.1.0"
+secret-service = "^2.0"
 serde = { version = "^1.0.104", features = ["derive"] }
 structopt = { version = "^0.3.8", features = ["color", "suggestions", "wrap_help"] }
 term_size = "^0.3.1"

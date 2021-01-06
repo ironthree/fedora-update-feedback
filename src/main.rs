@@ -95,7 +95,8 @@ fn get_store_password(clear: bool) -> Result<String, String> {
         },
     };
 
-    let attributes = vec![("fedora-update-feedback", "FAS Password")];
+    let mut attributes = HashMap::new();
+    attributes.insert("fedora-update-feedback", "FAS Password");
 
     let store = |password: &str, replace: bool| {
         if let Err(error) = collection.create_item(

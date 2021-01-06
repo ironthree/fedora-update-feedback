@@ -68,7 +68,7 @@ pub fn ask_feedback<'a, S: std::hash::BuildHasher>(
         Skip,
         Ignore,
         Comment,
-    };
+    }
 
     let action = match get_input("Action ([S]kip / [i]gnore / [c]omment)")
         .to_lowercase()
