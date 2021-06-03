@@ -1,3 +1,10 @@
+# Release 1.0.2 "The Fix" (June 03, 2021)
+
+Internal changes:
+
+- fix code style for 2021 edition changes (`panic!` macro changes)
+- update `rustyline` to `8`
+
 # Release 1.0.1 "Upgrade" (January 06, 2021)
 
 Internal changes:
