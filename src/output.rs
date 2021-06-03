@@ -221,7 +221,7 @@ pub fn print_update<S: std::hash::BuildHasher>(
     println!("Locally installed packages contained in this update:");
     for build in builds {
         let name = parse_nvr(build)
-            .unwrap_or_else(|_| panic!(format!("Failed to parse build NVR: {}", build)))
+            .unwrap_or_else(|_| panic!("Failed to parse build NVR: {}", build))
             .0;
         let summary = summaries.get(name);
         let install_time = install_times.get(*build);
