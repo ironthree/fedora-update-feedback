@@ -1,3 +1,9 @@
+# Release 1.0.3 "Moar Upgrade" (July 30, 2021)
+
+Internal changes:
+
+- update `textwrap` to `0.14`
+
 # Release 1.0.2 "The Fix" (June 03, 2021)
 
 Internal changes:

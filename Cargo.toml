@@ -3,7 +3,7 @@ name = "fedora-update-feedback"
 description = "provide feedback for fedora updates (inspired by fedora-easy-karma)"
 license = "MIT OR Apache-2.0"
 
-version = "1.0.2"
+version = "1.0.3"
 edition = "2018"
 
 authors = ["Fabio Valentini <decathorpe@gmail.com>"]
