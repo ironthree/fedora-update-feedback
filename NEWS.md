@@ -1,3 +1,9 @@
+# Release 1.0.4 "Face Lift" (August 09, 2021)
+
+Minor changes:
+
+- fix output formatting issues caused by upgrading to `textwrap` version `0.14`
+
 # Release 1.0.3 "Moar Upgrade" (July 30, 2021)
 
 Internal changes:
