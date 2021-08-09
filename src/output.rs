@@ -191,7 +191,7 @@ pub fn print_update<S: std::hash::BuildHasher>(
                 // make sure bug title doesn't contain words that are split across lines
                 match term_size::dimensions() {
                     Some((w, _)) => {
-                        print!("{}", textwrap::indent(&textwrap::fill(title.trim(), w - 3), "  "));
+                        println!("{}", textwrap::indent(&textwrap::fill(title.trim(), w - 3), "  "));
                     },
                     None => {
                         println!("  {}", title);
@@ -250,15 +250,15 @@ pub fn print_update<S: std::hash::BuildHasher>(
         for comment in sorted {
             println!("- {} ({}): {}", &comment.user.name, &comment.timestamp, &comment.karma);
 
+            let trimmed = comment.text.trim();
             match term_size::dimensions() {
                 Some((w, _)) => {
-                    print!(
-                        "{}",
-                        textwrap::indent(&textwrap::fill(&comment.text.trim(), w - 3), "  ")
-                    );
+                    if !trimmed.is_empty() {
+                        println!("{}", textwrap::indent(&textwrap::fill(trimmed, w - 3), "  "));
+                    }
                 },
                 None => {
-                    println!("{}", &comment.text.trim());
+                    println!("{}", trimmed);
                 },
             };
         }

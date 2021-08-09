@@ -350,15 +350,18 @@ fn main() -> Result<(), String> {
         match feedback {
             Feedback::Cancel => {
                 println!("Cancelling.");
+                println!();
                 break;
             },
             Feedback::Ignore => {
                 println!("Ignoring.");
+                println!();
                 ignored.push(update.alias.clone());
                 continue;
             },
             Feedback::Skip => {
                 println!("Skipping.");
+                println!();
                 continue;
             },
             Feedback::Values {
