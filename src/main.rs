@@ -22,15 +22,17 @@ mod nvr;
 mod output;
 mod parse;
 mod query;
+mod secrets;
 mod sysinfo;
 
-use checks::{do_check_obsoletes, do_check_unpushed, obsoleted_check, unpushed_check};
+use checks::{do_check_obsoletes, do_check_pending, do_check_unpushed, obsoleted_check, unpushed_check};
 use config::{get_config, get_legacy_username};
 use ignore::{get_ignored, set_ignored};
 use input::{ask_feedback, Feedback, Progress};
 use nvr::NVR;
 use parse::parse_nvr;
 use query::{query_pending, query_testing};
+use secrets::{get_store_password, read_password};
 use sysinfo::{get_installation_times, get_installed, get_release, get_src_bin_map, get_summaries};
 
 /// There are some features that are configurable with the config file located at
@@ -73,92 +75,6 @@ pub struct Command {
     ignore_keyring: bool,
 }
 
-/// This function prompts the user for their FAS password.
-fn read_password() -> String {
-    rpassword::prompt_password_stdout("FAS Password: ").expect("Failed to read password from stdin.")
-}
-
-/// This function asks for and stores the password in the session keyring.
-fn get_store_password(clear: bool) -> Result<String, String> {
-    let ss = match secret_service::SecretService::new(secret_service::EncryptionType::Dh) {
-        Ok(ss) => ss,
-        Err(error) => {
-            println!("Failed to initialize SecretService client: {}", error);
-            return Ok(read_password());
-        },
-    };
-
-    let collection = match ss.get_default_collection() {
-        Ok(c) => c,
-        Err(error) => {
-            println!("Failed to query SecretService: {}", error);
-            return Ok(read_password());
-        },
-    };
-
-    let mut attributes = HashMap::new();
-    attributes.insert("fedora-update-feedback", "FAS Password");
-
-    let store = |password: &str, replace: bool| {
-        if let Err(error) = collection.create_item(
-            "fedora-update-feedback",
-            attributes.clone(),
-            password.as_bytes(),
-            replace,
-            "password",
-        ) {
-            println!("Failed to save password with SecretService: {}", error);
-        }
-    };
-
-    let items = match collection.search_items(attributes.clone()) {
-        Ok(items) => items,
-        Err(error) => {
-            format!("Failed to query SecretService: {}", error);
-            return Ok(read_password());
-        },
-    };
-
-    if clear {
-        let password = read_password();
-        store(&password, true);
-        return Ok(password);
-    };
-
-    let password = match items.get(0) {
-        Some(item) => match item.get_secret() {
-            Ok(secret) => match String::from_utf8(secret) {
-                Ok(valid) => valid,
-                Err(error) => {
-                    println!("Stored password was not valid UTF-8: {}", error);
-
-                    let password = read_password();
-                    store(&password, true);
-
-                    password
-                },
-            },
-            Err(error) => {
-                println!("Password was not stored correctly: {}", error);
-
-                let password = read_password();
-                store(&password, true);
-
-                password
-            },
-        },
-        None => {
-            let password = read_password();
-            store(&password, false);
-
-            password
-        },
-    };
-
-    Ok(password)
-}
-
-#[allow(clippy::cognitive_complexity)]
 fn main() -> Result<(), String> {
     // set up logger for warnings / debug messages
     // turn off very verbose rustyline debug logging
@@ -236,23 +152,7 @@ fn main() -> Result<(), String> {
     updates.extend(testing_updates);
     println!();
 
-    let check_pending = args.check_pending || {
-        if let Some(config) = &config {
-            if let Some(cfg) = &config.fuf {
-                if let Some(b) = cfg.check_pending {
-                    b
-                } else {
-                    false
-                }
-            } else {
-                false
-            }
-        } else {
-            false
-        }
-    };
-
-    if check_pending {
+    if do_check_pending(&args, config.as_ref()) {
         // get updates in "pending" state
         let pending_updates = query_pending(&bodhi, release)?;
         updates.extend(pending_updates);

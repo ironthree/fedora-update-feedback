@@ -8,6 +8,24 @@ use crate::parse::parse_nvr;
 use crate::query::{query_obsoleted, query_unpushed};
 use crate::Command;
 
+pub fn do_check_pending(args: &Command, config: Option<&FedoraConfig>) -> bool {
+    args.check_pending || {
+        if let Some(config) = config {
+            if let Some(cfg) = &config.fuf {
+                if let Some(b) = cfg.check_pending {
+                    b
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+}
+
 pub fn do_check_obsoletes(args: &Command, config: Option<&FedoraConfig>) -> bool {
     args.check_obsoleted || {
         if let Some(config) = config {
