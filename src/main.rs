@@ -246,7 +246,7 @@ fn main() -> Result<(), String> {
     let install_times = get_installation_times()?;
 
     // get number of ignored updates
-    let no_ignored = installed_updates.iter().filter(|u| ignored.contains(&u.alias)).count();
+    let mut no_ignored = installed_updates.iter().filter(|u| ignored.contains(&u.alias)).count();
     let no_updates = installed_updates.len();
 
     for (update_no, update) in installed_updates.into_iter().enumerate() {
@@ -284,6 +284,7 @@ fn main() -> Result<(), String> {
                 println!("Ignoring.");
                 println!();
                 ignored.push(update.alias.clone());
+                no_ignored += 1;
                 continue;
             },
             Feedback::Skip => {
