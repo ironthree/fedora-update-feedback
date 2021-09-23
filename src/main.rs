@@ -26,7 +26,7 @@ mod sysinfo;
 
 use config::{get_config, get_legacy_username};
 use ignore::{get_ignored, set_ignored};
-use input::{ask_feedback, Feedback};
+use input::{ask_feedback, Feedback, Progress};
 use nvr::NVR;
 use parse::parse_nvr;
 use query::{query_obsoleted, query_pending, query_testing, query_unpushed};
@@ -344,7 +344,13 @@ fn main() -> Result<(), String> {
     // query dnf for when the updates were installed
     let install_times = get_installation_times()?;
 
-    for update in installed_updates {
+    // get number of ignored updates
+    let no_ignored = installed_updates.iter().filter(|u| ignored.contains(&u.alias)).count();
+    let no_updates = installed_updates.len();
+
+    for (update_no, update) in installed_updates.into_iter().enumerate() {
+        let progress = Progress::new(update_no, no_updates, no_ignored);
+
         if ignored.contains(&update.alias) {
             println!("Skipping ignored update: {}", &update.alias);
             continue;
@@ -360,7 +366,7 @@ fn main() -> Result<(), String> {
             };
         }
 
-        let feedback = ask_feedback(&mut rl, update, &binaries, &summaries, &install_times)?;
+        let feedback = ask_feedback(&mut rl, update, progress, &binaries, &summaries, &install_times)?;
 
         match feedback {
             Feedback::Abort => {

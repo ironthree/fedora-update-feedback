@@ -6,6 +6,24 @@ use chrono::{DateTime, Utc};
 
 use crate::output::print_update;
 
+/// This struct represents the user's progress through the list of installed updates.
+#[derive(Debug)]
+pub struct Progress {
+    update_no: usize,
+    no_updates: usize,
+    no_ignored: usize,
+}
+
+impl Progress {
+    pub fn new(update_no: usize, no_updates: usize, no_ignored: usize) -> Progress {
+        Progress {
+            update_no,
+            no_updates,
+            no_ignored,
+        }
+    }
+}
+
 /// This enum contains all feedback information for an update that's been parsed from CLI input.
 pub enum Feedback<'a> {
     /// Cancel providing feedback for the current update.
@@ -60,6 +78,7 @@ pub fn str_to_karma(string: &str) -> Option<Karma> {
 pub fn ask_feedback<'a, S: std::hash::BuildHasher>(
     rl: &mut rustyline::Editor<()>,
     update: &'a Update,
+    progress: Progress,
     builds: &[&str],
     summaries: &HashMap<String, String, S>,
     install_times: &HashMap<String, DateTime<Utc>, S>,
@@ -72,6 +91,13 @@ pub fn ask_feedback<'a, S: std::hash::BuildHasher>(
         Abort,
         Comment,
     }
+
+    println!(
+        "This is update {} out of {} available updates (including {} ignored updates).",
+        progress.update_no + 1,
+        progress.no_updates,
+        progress.no_ignored,
+    );
 
     let action = match get_input("Action ([S]kip / [i]gnore / [c]omment / [a]bort)")
         .to_lowercase()
