@@ -363,10 +363,15 @@ fn main() -> Result<(), String> {
         let feedback = ask_feedback(&mut rl, update, &binaries, &summaries, &install_times)?;
 
         match feedback {
+            Feedback::Abort => {
+                println!("Aborting.");
+                println!();
+                break;
+            },
             Feedback::Cancel => {
                 println!("Cancelling.");
                 println!();
-                break;
+                continue;
             },
             Feedback::Ignore => {
                 println!("Ignoring.");

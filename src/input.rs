@@ -8,12 +8,14 @@ use crate::output::print_update;
 
 /// This enum contains all feedback information for an update that's been parsed from CLI input.
 pub enum Feedback<'a> {
-    /// With this input, providing feedback for the current update is cancelled.
+    /// Cancel providing feedback for the current update.
     Cancel,
     /// Ignore this update now and in the future.
     Ignore,
     /// With this input, the current update is skipped.
     Skip,
+    /// Cancel providing feedback for all remaining updates.
+    Abort,
     /// These values are used when submitting feedback.
     Values {
         /// comment text (can be multiple lines)
@@ -67,16 +69,18 @@ pub fn ask_feedback<'a, S: std::hash::BuildHasher>(
     enum Action {
         Skip,
         Ignore,
+        Abort,
         Comment,
     }
 
-    let action = match get_input("Action ([S]kip / [i]gnore / [c]omment)")
+    let action = match get_input("Action ([S]kip / [i]gnore / [c]omment / [a]bort)")
         .to_lowercase()
         .as_str()
     {
         "s" => Action::Skip,
         "i" => Action::Ignore,
         "c" => Action::Comment,
+        "a" => Action::Abort,
         _ => Action::Skip,
     };
 
@@ -87,6 +91,10 @@ pub fn ask_feedback<'a, S: std::hash::BuildHasher>(
     if let Action::Ignore = action {
         return Ok(Feedback::Ignore);
     };
+
+    if let Action::Abort = action {
+        return Ok(Feedback::Abort);
+    }
 
     println!("Add a descriptive comment (two empty lines or EOF (Ctrl-D) end input):");
     let mut comment_lines: Vec<String> = Vec::new();
