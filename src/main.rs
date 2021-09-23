@@ -102,7 +102,7 @@ fn get_store_password(clear: bool) -> Result<String, String> {
         if let Err(error) = collection.create_item(
             "fedora-update-feedback",
             attributes.clone(),
-            &password.as_bytes(),
+            password.as_bytes(),
             replace,
             "password",
         ) {
@@ -159,6 +159,21 @@ fn get_store_password(clear: bool) -> Result<String, String> {
 
 #[allow(clippy::cognitive_complexity)]
 fn main() -> Result<(), String> {
+    // set up logger for warnings / debug messages
+    // turn off very verbose rustyline debug logging
+    #[cfg(not(feature = "debug"))]
+    env_logger::builder()
+        .filter_level(log::LevelFilter::Info)
+        .parse_env("FUF_LOG")
+        .filter_module("rustyline", log::LevelFilter::Off)
+        .init();
+    #[cfg(feature = "debug")]
+    env_logger::builder()
+        .filter_level(log::LevelFilter::Debug)
+        .parse_env("FUF_LOG")
+        .filter_module("rustyline", log::LevelFilter::Off)
+        .init();
+
     let args: Command = Command::from_args();
 
     let config = if let Ok(config) = get_config() {
@@ -288,7 +303,7 @@ fn main() -> Result<(), String> {
 
         for nvr in nvrs {
             if installed_packages.contains(&nvr) {
-                installed_updates.push(&update);
+                installed_updates.push(update);
 
                 builds_for_update
                     .entry(update.alias.clone())
@@ -448,7 +463,7 @@ fn main() -> Result<(), String> {
 
             for nvr in nvrs {
                 if installed_packages.contains(&nvr) {
-                    installed_obsoleted.push(&update);
+                    installed_obsoleted.push(update);
 
                     builds_for_update
                         .entry(update.alias.clone())
@@ -515,7 +530,7 @@ fn main() -> Result<(), String> {
 
             for nvr in nvrs {
                 if installed_packages.contains(&nvr) {
-                    installed_unpushed.push(&update);
+                    installed_unpushed.push(update);
 
                     builds_for_update
                         .entry(update.alias.clone())

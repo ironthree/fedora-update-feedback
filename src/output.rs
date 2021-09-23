@@ -146,7 +146,7 @@ pub fn print_update<S: std::hash::BuildHasher>(
             println!();
 
             // print user-facing update notes
-            println!("{}", textwrap::fill(&update.notes.trim(), w - 1));
+            println!("{}", textwrap::fill(update.notes.trim(), w - 1));
         },
 
         None => {

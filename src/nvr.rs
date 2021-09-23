@@ -3,6 +3,7 @@ use std::fmt::Display;
 
 /// This struct encapsulates a parsed NVR string.
 #[derive(Debug, PartialEq)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct NVR {
     /// name of the package
     pub n: String,

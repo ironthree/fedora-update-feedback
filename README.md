@@ -93,6 +93,21 @@ To make it available in `$PATH`, either copy it into `$HOME/.local/bin`, or add
 `~/.cargo/bin` to your `$PATH` (probably by editing `~/.bash_profile`).
 
 
+### development + debugging
+
+By default, no "structured" log messages from `fedora-update-feedback` or any
+of the invoked libraries should be visible when running
+`fedora-update-feedback`. For debugging and development purposes, they can be
+turned on by setting the `FUF_LOG` environment variable:
+
+```
+FUF_LOG=debug cargo run
+```
+
+When building `fedora-update-feedback` with the `debug` feature, the `debug`
+log level is set as the default, otherwise, the default level is `info`.
+
+
 ### TODO
 
 - I'd like to improve the "visual quality" of the terminal output and
