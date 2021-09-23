@@ -238,29 +238,29 @@ pub fn print_update<S: std::hash::BuildHasher>(
     }
 
     if let Some(comments) = &update.comments {
-        println!();
-        println!("Previous comments:");
+        let mut sorted: Vec<&Comment> = comments.iter().filter(|c| c.user.name != "bodhi").collect();
 
-        let mut sorted: Vec<&Comment> = Vec::new();
-        for comment in comments {
-            sorted.push(comment);
-        }
-        sorted.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+        if !sorted.is_empty() {
+            println!();
+            println!("Previous comments:");
 
-        for comment in sorted {
-            println!("- {} ({}): {}", &comment.user.name, &comment.timestamp, &comment.karma);
+            sorted.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
 
-            let trimmed = comment.text.trim();
-            match term_size::dimensions() {
-                Some((w, _)) => {
-                    if !trimmed.is_empty() {
-                        println!("{}", textwrap::indent(&textwrap::fill(trimmed, w - 3), "  "));
-                    }
-                },
-                None => {
-                    println!("{}", trimmed);
-                },
-            };
+            for comment in sorted {
+                println!("- {} ({}): {}", &comment.user.name, &comment.timestamp, &comment.karma);
+
+                let trimmed = comment.text.trim();
+                match term_size::dimensions() {
+                    Some((w, _)) => {
+                        if !trimmed.is_empty() {
+                            println!("{}", textwrap::indent(&textwrap::fill(trimmed, w - 3), "  "));
+                        }
+                    },
+                    None => {
+                        println!("{}", trimmed);
+                    },
+                };
+            }
         }
     };
 
