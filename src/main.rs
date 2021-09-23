@@ -12,9 +12,9 @@ use std::collections::HashMap;
 
 use bodhi::error::QueryError;
 use bodhi::*;
-
 use structopt::StructOpt;
 
+mod checks;
 mod config;
 mod ignore;
 mod input;
@@ -24,12 +24,13 @@ mod parse;
 mod query;
 mod sysinfo;
 
+use checks::{do_check_obsoletes, do_check_unpushed, obsoleted_check, unpushed_check};
 use config::{get_config, get_legacy_username};
 use ignore::{get_ignored, set_ignored};
 use input::{ask_feedback, Feedback, Progress};
 use nvr::NVR;
 use parse::parse_nvr;
-use query::{query_obsoleted, query_pending, query_testing, query_unpushed};
+use query::{query_pending, query_testing};
 use sysinfo::{get_installation_times, get_installed, get_release, get_src_bin_map, get_summaries};
 
 /// There are some features that are configurable with the config file located at
@@ -51,7 +52,7 @@ use sysinfo::{get_installation_times, get_installed, get_release, get_src_bin_ma
 /// it, or made a typo when it was prompted), use the --ignore-keyring CLI switch
 /// to ask for the password again.
 #[derive(Debug, StructOpt)]
-struct Command {
+pub struct Command {
     /// Override or provide FAS username
     #[structopt(long, short)]
     username: Option<String>,
@@ -438,143 +439,29 @@ fn main() -> Result<(), String> {
         };
     }
 
-    let check_obsoleted = args.check_obsoleted || {
-        if let Some(config) = &config {
-            if let Some(cfg) = &config.fuf {
-                if let Some(b) = cfg.check_obsoleted {
-                    b
-                } else {
-                    false
-                }
-            } else {
-                false
-            }
-        } else {
-            false
-        }
-    };
-
-    if check_obsoleted {
-        // get updates in "unpushed" state
-        let obsoleted_updates = query_obsoleted(&bodhi, release)?;
-        println!();
-
-        let mut installed_obsoleted: Vec<&Update> = Vec::new();
-        for update in &obsoleted_updates {
-            let mut nvrs: Vec<NVR> = Vec::new();
-
-            for build in &update.builds {
-                let (n, v, r) = parse_nvr(&build.nvr)?;
-                nvrs.push(NVR {
-                    n: n.to_string(),
-                    v: v.to_string(),
-                    r: r.to_string(),
-                });
-            }
-
-            for nvr in nvrs {
-                if installed_packages.contains(&nvr) {
-                    installed_obsoleted.push(update);
-
-                    builds_for_update
-                        .entry(update.alias.clone())
-                        .and_modify(|e| e.push(nvr.to_string()))
-                        .or_insert_with(|| vec![nvr.to_string()]);
-                };
-            }
-        }
-
-        if !installed_obsoleted.is_empty() {
-            println!("There are obsoleted updates installed on this system.");
-            println!("This probably means your system is not up-to-date.");
-
-            for update in installed_obsoleted {
-                println!(" - {}:", update.title);
-                // this unwrap is safe since we definitely inserted a value for every update
-                for build in builds_for_update.get(update.alias.as_str()).unwrap() {
-                    let mut binaries: Vec<&str> = Vec::new();
-                    if let Some(list) = src_bin_map.get(build) {
-                        binaries.extend(list.iter().map(|s| s.as_str()));
-                    };
-
-                    for binary in binaries {
-                        println!("   - {}", binary);
-                    }
-                }
-            }
-        };
-    };
-
-    let check_unpushed = args.check_unpushed || {
-        if let Some(config) = &config {
-            if let Some(cfg) = &config.fuf {
-                if let Some(b) = cfg.check_unpushed {
-                    b
-                } else {
-                    false
-                }
-            } else {
-                false
-            }
-        } else {
-            false
-        }
-    };
-
-    if check_unpushed {
-        // get updates in "unpushed" state
-        let unpushed_updates = query_unpushed(&bodhi, release)?;
-        println!();
-
-        let mut installed_unpushed: Vec<&Update> = Vec::new();
-        for update in &unpushed_updates {
-            let mut nvrs: Vec<NVR> = Vec::new();
-
-            for build in &update.builds {
-                let (n, v, r) = parse_nvr(&build.nvr)?;
-                nvrs.push(NVR {
-                    n: n.to_string(),
-                    v: v.to_string(),
-                    r: r.to_string(),
-                });
-            }
-
-            for nvr in nvrs {
-                if installed_packages.contains(&nvr) {
-                    installed_unpushed.push(update);
-
-                    builds_for_update
-                        .entry(update.alias.clone())
-                        .and_modify(|e| e.push(nvr.to_string()))
-                        .or_insert_with(|| vec![nvr.to_string()]);
-                };
-            }
-        }
-
-        if !installed_unpushed.is_empty() {
-            println!("There are unpushed updates installed on this system.");
-            println!("It is recommended to run 'dnf distro-sync' to clean this up.");
-
-            for update in installed_unpushed {
-                println!(" - {}:", update.title);
-                // this unwrap is safe since we definitely inserted a value for every update
-                for build in builds_for_update.get(update.alias.as_str()).unwrap() {
-                    let mut binaries: Vec<&str> = Vec::new();
-                    if let Some(list) = src_bin_map.get(build) {
-                        binaries.extend(list.iter().map(|s| s.as_str()));
-                    };
-
-                    for binary in binaries {
-                        println!("   - {}", binary);
-                    }
-                }
-            }
-        };
-    };
-
     if let Err(error) = set_ignored(&ignored) {
         println!("Failed to write ignored updates to disk.");
         println!("{}", error);
+    };
+
+    if do_check_obsoletes(&args, config.as_ref()) {
+        obsoleted_check(
+            &bodhi,
+            release,
+            &installed_packages,
+            &src_bin_map,
+            &mut builds_for_update,
+        )?;
+    };
+
+    if do_check_unpushed(&args, config.as_ref()) {
+        unpushed_check(
+            &bodhi,
+            release,
+            &installed_packages,
+            &src_bin_map,
+            &mut builds_for_update,
+        )?;
     };
 
     Ok(())

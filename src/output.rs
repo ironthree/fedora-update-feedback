@@ -77,11 +77,11 @@ fn pretty_duration(duration: Duration) -> String {
 }
 
 /// This helper function pretty-prints an update.
-pub fn print_update<S: std::hash::BuildHasher>(
+pub fn print_update(
     update: &Update,
     builds: &[&str],
-    summaries: &HashMap<String, String, S>,
-    install_times: &HashMap<String, DateTime<Utc>, S>,
+    summaries: &HashMap<String, String>,
+    install_times: &HashMap<String, DateTime<Utc>>,
 ) {
     let submitted_date = match &update.date_submitted {
         Some(date) => date.to_string(),
