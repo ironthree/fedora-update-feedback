@@ -1,3 +1,16 @@
+# Release 1.1.0 "Cookie Monster" (September 24, 2021)
+
+Improvements:
+
+- add "abort" action to stop providing update feedback
+- don't print administrative comments by bodhi
+- show progress through list of updates
+
+Internal changes:
+
+- add debug logging infrastructure
+- refactored a lot of code from "main" into separate functions
+
 # Release 1.0.4 "Face Lift" (August 09, 2021)
 
 Minor changes:
