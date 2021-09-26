@@ -46,7 +46,7 @@ fn duration_until_now(datetime: &DateTime<Utc>) -> Duration {
 }
 
 /// This helper handles proper pluralization of number terms.
-fn proper_plural(number: i64, term: &str) -> String {
+pub(crate) fn proper_plural(number: i64, term: &str) -> String {
     if number == -1 || number == 1 {
         format!("{} {}", number, term)
     } else {

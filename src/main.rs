@@ -64,6 +64,12 @@ pub struct Command {
     /// Include updates in "pending" state
     #[structopt(long, short = "P")]
     check_pending: bool,
+    /// Include updates that were already commented on
+    #[structopt(long, short = "c")]
+    check_commented: bool,
+    /// Include updates that were previously ignored
+    #[structopt(long, short = "I")]
+    check_ignored: bool,
     /// Check for installed unpushed updates
     #[structopt(long, short = "U")]
     check_unpushed: bool,
@@ -73,6 +79,13 @@ pub struct Command {
     /// Ignore password stored in session keyring
     #[structopt(long)]
     ignore_keyring: bool,
+}
+
+fn has_already_commented(update: &Update, user: &str) -> bool {
+    update
+        .comments
+        .as_ref()
+        .map_or(false, |comments| comments.iter().any(|c| &c.user.name == user))
 }
 
 fn main() -> Result<(), String> {
@@ -160,30 +173,10 @@ fn main() -> Result<(), String> {
     };
 
     // filter out updates created by the current user
-    let updates: Vec<Update> = updates
+    let relevant_updates: Vec<Update> = updates
         .into_iter()
         .filter(|update| update.user.name != username)
         .collect();
-
-    // filter out updates that were already commented on
-    let mut relevant_updates: Vec<&Update> = Vec::new();
-    for update in &updates {
-        if let Some(comments) = &update.comments {
-            let mut commented = false;
-
-            for comment in comments {
-                if comment.user.name == username {
-                    commented = true;
-                };
-            }
-
-            if !commented {
-                relevant_updates.push(update);
-            };
-        } else {
-            relevant_updates.push(update);
-        };
-    }
 
     // filter out updates for packages that are not installed;
     // and remember which builds are installed for which update
@@ -250,12 +243,19 @@ fn main() -> Result<(), String> {
     let no_updates = installed_updates.len();
 
     for (update_no, update) in installed_updates.into_iter().enumerate() {
-        let progress = Progress::new(update_no, no_updates, no_ignored);
-
-        if ignored.contains(&update.alias) {
+        let previously_ignored = ignored.contains(&update.alias);
+        if previously_ignored && !args.check_ignored {
             println!("Skipping ignored update: {}", &update.alias);
             continue;
         };
+
+        let already_commented = has_already_commented(update, &username);
+        if already_commented && !args.check_commented {
+            println!("Skipping update that already has user feedback: {}", &update.alias);
+            continue;
+        }
+
+        let progress = Progress::new(update_no, no_updates, no_ignored, already_commented, previously_ignored);
 
         // this unwrap is safe since we definitely inserted a value for every update
         let builds = builds_for_update.get(update.alias.as_str()).unwrap();

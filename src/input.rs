@@ -4,7 +4,7 @@ use std::io::{stdin, stdout, Write};
 use bodhi::{Karma, Update};
 use chrono::{DateTime, Utc};
 
-use crate::output::print_update;
+use crate::output::{print_update, proper_plural};
 
 /// This struct represents the user's progress through the list of installed updates.
 #[derive(Debug)]
@@ -12,14 +12,24 @@ pub struct Progress {
     update_no: usize,
     no_updates: usize,
     no_ignored: usize,
+    already_commented: bool,
+    previously_ignored: bool,
 }
 
 impl Progress {
-    pub fn new(update_no: usize, no_updates: usize, no_ignored: usize) -> Progress {
+    pub fn new(
+        update_no: usize,
+        no_updates: usize,
+        no_ignored: usize,
+        already_commented: bool,
+        previously_ignored: bool,
+    ) -> Progress {
         Progress {
             update_no,
             no_updates,
             no_ignored,
+            already_commented,
+            previously_ignored,
         }
     }
 }
@@ -93,11 +103,19 @@ pub fn ask_feedback<'a>(
     }
 
     println!(
-        "This is update {} out of {} available updates (including {} ignored updates).",
+        "This is update {} out of {} (including {}).",
         progress.update_no + 1,
-        progress.no_updates,
-        progress.no_ignored,
+        proper_plural(progress.no_updates as i64, "available update"),
+        proper_plural(progress.no_ignored as i64, "ignored update"),
     );
+
+    if progress.already_commented {
+        println!("Feedback for this update has already been submitted.");
+    }
+
+    if progress.previously_ignored {
+        println!("This update has been previously marked as ignored.");
+    }
 
     let action = match get_input("Action ([S]kip / [i]gnore / [c]omment / [a]bort)")
         .to_lowercase()
