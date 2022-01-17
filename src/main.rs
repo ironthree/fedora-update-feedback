@@ -85,10 +85,11 @@ fn has_already_commented(update: &Update, user: &str) -> bool {
     update
         .comments
         .as_ref()
-        .map_or(false, |comments| comments.iter().any(|c| &c.user.name == user))
+        .map_or(false, |comments| comments.iter().any(|c| c.user.name == user))
 }
 
-fn main() -> Result<(), String> {
+#[tokio::main]
+async fn main() -> Result<(), String> {
     // set up logger for warnings / debug messages
     // turn off very verbose rustyline debug logging
     #[cfg(not(feature = "debug"))]
@@ -141,6 +142,7 @@ fn main() -> Result<(), String> {
     let bodhi = match BodhiServiceBuilder::default()
         .authentication(&username, &password)
         .build()
+        .await
     {
         Ok(bodhi) => bodhi,
         Err(error) => {
@@ -161,13 +163,13 @@ fn main() -> Result<(), String> {
     let mut updates: Vec<Update> = Vec::new();
 
     // get updates in "testing" state
-    let testing_updates = query_testing(&bodhi, release)?;
+    let testing_updates = query_testing(&bodhi, &release).await?;
     updates.extend(testing_updates);
     println!();
 
     if do_check_pending(&args, config.as_ref()) {
         // get updates in "pending" state
-        let pending_updates = query_pending(&bodhi, release)?;
+        let pending_updates = query_pending(&bodhi, &release).await?;
         updates.extend(pending_updates);
         println!();
     };
@@ -303,7 +305,7 @@ fn main() -> Result<(), String> {
                     continue;
                 };
 
-                let mut builder = CommentBuilder::new(&update.alias).karma(karma);
+                let mut builder = CommentCreator::new(&update.alias).karma(karma);
 
                 if let Some(text) = &comment {
                     builder = builder.text(text);
@@ -317,7 +319,7 @@ fn main() -> Result<(), String> {
                     builder = builder.testcase_feedback(name, karma);
                 }
 
-                let new_comment: Result<NewComment, QueryError> = bodhi.create(&builder);
+                let new_comment: Result<NewComment, QueryError> = bodhi.request(&builder).await;
 
                 match new_comment {
                     Ok(value) => {
@@ -348,21 +350,23 @@ fn main() -> Result<(), String> {
     if do_check_obsoletes(&args, config.as_ref()) {
         obsoleted_check(
             &bodhi,
-            release,
+            &release,
             &installed_packages,
             &src_bin_map,
             &mut builds_for_update,
-        )?;
+        )
+        .await?;
     };
 
     if do_check_unpushed(&args, config.as_ref()) {
         unpushed_check(
             &bodhi,
-            release,
+            &release,
             &installed_packages,
             &src_bin_map,
             &mut builds_for_update,
-        )?;
+        )
+        .await?;
     };
 
     Ok(())

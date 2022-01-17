@@ -62,15 +62,15 @@ pub fn do_check_unpushed(args: &Command, config: Option<&FedoraConfig>) -> bool 
     }
 }
 
-pub fn obsoleted_check(
+pub async fn obsoleted_check(
     bodhi: &BodhiService,
-    release: FedoraRelease,
+    release: &FedoraRelease,
     installed_packages: &[NVR],
     src_bin_map: &HashMap<String, Vec<String>>,
     builds_for_update: &mut HashMap<String, Vec<String>>,
 ) -> Result<(), String> {
     // get updates in "unpushed" state
-    let obsoleted_updates = query_obsoleted(bodhi, release)?;
+    let obsoleted_updates = query_obsoleted(bodhi, release).await?;
     println!();
 
     let mut installed_obsoleted: Vec<&Update> = Vec::new();
@@ -121,15 +121,15 @@ pub fn obsoleted_check(
     Ok(())
 }
 
-pub fn unpushed_check(
+pub async fn unpushed_check(
     bodhi: &BodhiService,
-    release: FedoraRelease,
+    release: &FedoraRelease,
     installed_packages: &[NVR],
     src_bin_map: &HashMap<String, Vec<String>>,
     builds_for_update: &mut HashMap<String, Vec<String>>,
 ) -> Result<(), String> {
     // get updates in "unpushed" state
-    let unpushed_updates = query_unpushed(bodhi, release)?;
+    let unpushed_updates = query_unpushed(bodhi, release).await?;
     println!();
 
     let mut installed_unpushed: Vec<&Update> = Vec::new();
