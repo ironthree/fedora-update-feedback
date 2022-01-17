@@ -7,6 +7,14 @@ use chrono::{DateTime, TimeZone, Utc};
 use crate::nvr::NVR;
 use crate::parse::parse_filename;
 
+fn handle_status(code: Option<i32>, message: &str) -> Result<(), String> {
+    match code {
+        Some(x) if x != 0 => Err(String::from(message)),
+        Some(_) => Ok(()),
+        None => Err(String::from(message)),
+    }
+}
+
 /// This helper function queries RPM for the value of `%{fedora}` on the current system.
 pub fn get_release() -> Result<FedoraRelease, String> {
     let output = match Command::new("rpm").arg("--eval").arg("%{fedora}").output() {
@@ -16,15 +24,7 @@ pub fn get_release() -> Result<FedoraRelease, String> {
         },
     };
 
-    match output.status.code() {
-        Some(x) if x != 0 => {
-            return Err(String::from("Failed to run rpm."));
-        },
-        Some(_) => {},
-        None => {
-            return Err(String::from("Failed to run rpm."));
-        },
-    };
+    handle_status(output.status.code(), "Failed to run rpm.")?;
 
     let release_num = match std::str::from_utf8(&output.stdout) {
         Ok(result) => result,
@@ -62,15 +62,7 @@ pub fn get_installed() -> Result<Vec<NVR>, String> {
         },
     };
 
-    match output.status.code() {
-        Some(x) if x != 0 => {
-            return Err(String::from("Failed to query dnf."));
-        },
-        Some(_) => {},
-        None => {
-            return Err(String::from("Failed to query dnf."));
-        },
-    };
+    handle_status(output.status.code(), "Failed to query dnf.")?;
 
     let installed = match std::str::from_utf8(&output.stdout) {
         Ok(result) => result,
@@ -110,11 +102,7 @@ pub fn get_summaries() -> Result<HashMap<String, String>, String> {
         Err(error) => return Err(error.to_string()),
     };
 
-    match output.status.code() {
-        Some(x) if x != 0 => return Err(String::from("Failed to query dnf.")),
-        Some(_) => {},
-        None => return Err(String::from("Failed to query dnf.")),
-    }
+    handle_status(output.status.code(), "Failed to query dnf.")?;
 
     let results = match std::str::from_utf8(&output.stdout) {
         Ok(result) => result,
@@ -154,11 +142,7 @@ pub fn get_src_bin_map() -> Result<HashMap<String, Vec<String>>, String> {
         Err(error) => return Err(error.to_string()),
     };
 
-    match output.status.code() {
-        Some(x) if x != 0 => return Err(String::from("Failed to query dnf.")),
-        Some(_) => {},
-        None => return Err(String::from("Failed to query dnf.")),
-    }
+    handle_status(output.status.code(), "Failed to query dnf.")?;
 
     let results = match std::str::from_utf8(&output.stdout) {
         Ok(result) => result,
@@ -204,11 +188,7 @@ pub fn get_installation_times() -> Result<HashMap<String, DateTime<Utc>>, String
         Err(error) => return Err(format!("{}", error)),
     };
 
-    match output.status.code() {
-        Some(x) if x != 0 => return Err(String::from("Failed to query dnf.")),
-        Some(_) => {},
-        None => return Err(String::from("Failed to query dnf.")),
-    }
+    handle_status(output.status.code(), "Failed to query dnf.")?;
 
     let results = match std::str::from_utf8(&output.stdout) {
         Ok(result) => result,

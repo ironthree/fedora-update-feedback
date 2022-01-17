@@ -4,7 +4,6 @@ use bodhi::{BodhiService, FedoraRelease, Update};
 
 use crate::config::FedoraConfig;
 use crate::nvr::NVR;
-use crate::parse::parse_nvr;
 use crate::query::{query_obsoleted, query_unpushed};
 use crate::Command;
 
@@ -62,6 +61,56 @@ pub fn do_check_unpushed(args: &Command, config: Option<&FedoraConfig>) -> bool 
     }
 }
 
+fn filter_installed_updates<'a>(
+    check_updates: &'a [Update],
+    installed_packages: &[NVR],
+    builds_for_update: &mut HashMap<String, Vec<String>>,
+) -> Result<Vec<&'a Update>, String> {
+    let mut installed_matched: Vec<&Update> = Vec::new();
+
+    for update in check_updates {
+        let nvrs = update
+            .builds
+            .iter()
+            .map(|b| b.nvr.parse())
+            .collect::<Result<Vec<NVR>, String>>()?;
+
+        for nvr in nvrs {
+            if installed_packages.contains(&nvr) {
+                installed_matched.push(update);
+
+                builds_for_update
+                    .entry(update.alias.clone())
+                    .and_modify(|e| e.push(nvr.to_string()))
+                    .or_insert_with(|| vec![nvr.to_string()]);
+            };
+        }
+    }
+
+    Ok(installed_matched)
+}
+
+fn print_update_builds(
+    updates: &[&Update],
+    src_bin_map: &HashMap<String, Vec<String>>,
+    builds_for_update: &mut HashMap<String, Vec<String>>,
+) {
+    for update in updates {
+        println!(" - {}:", update.title);
+        // this unwrap is safe since we definitely inserted a value for every update
+        for build in builds_for_update.get(update.alias.as_str()).unwrap() {
+            let mut binaries: Vec<&str> = Vec::new();
+            if let Some(list) = src_bin_map.get(build) {
+                binaries.extend(list.iter().map(|s| s.as_str()));
+            };
+
+            for binary in binaries {
+                println!("   - {}", binary);
+            }
+        }
+    }
+}
+
 pub async fn obsoleted_check(
     bodhi: &BodhiService,
     release: &FedoraRelease,
@@ -73,49 +122,13 @@ pub async fn obsoleted_check(
     let obsoleted_updates = query_obsoleted(bodhi, release).await?;
     println!();
 
-    let mut installed_obsoleted: Vec<&Update> = Vec::new();
-    for update in &obsoleted_updates {
-        let mut nvrs: Vec<NVR> = Vec::new();
-
-        for build in &update.builds {
-            let (n, v, r) = parse_nvr(&build.nvr)?;
-            nvrs.push(NVR {
-                n: n.to_string(),
-                v: v.to_string(),
-                r: r.to_string(),
-            });
-        }
-
-        for nvr in nvrs {
-            if installed_packages.contains(&nvr) {
-                installed_obsoleted.push(update);
-
-                builds_for_update
-                    .entry(update.alias.clone())
-                    .and_modify(|e| e.push(nvr.to_string()))
-                    .or_insert_with(|| vec![nvr.to_string()]);
-            };
-        }
-    }
+    let installed_obsoleted = filter_installed_updates(&obsoleted_updates, installed_packages, builds_for_update)?;
 
     if !installed_obsoleted.is_empty() {
         println!("There are obsoleted updates installed on this system.");
         println!("This probably means your system is not up-to-date.");
 
-        for update in installed_obsoleted {
-            println!(" - {}:", update.title);
-            // this unwrap is safe since we definitely inserted a value for every update
-            for build in builds_for_update.get(update.alias.as_str()).unwrap() {
-                let mut binaries: Vec<&str> = Vec::new();
-                if let Some(list) = src_bin_map.get(build) {
-                    binaries.extend(list.iter().map(|s| s.as_str()));
-                };
-
-                for binary in binaries {
-                    println!("   - {}", binary);
-                }
-            }
-        }
+        print_update_builds(&installed_obsoleted, src_bin_map, builds_for_update);
     };
 
     Ok(())
@@ -132,49 +145,13 @@ pub async fn unpushed_check(
     let unpushed_updates = query_unpushed(bodhi, release).await?;
     println!();
 
-    let mut installed_unpushed: Vec<&Update> = Vec::new();
-    for update in &unpushed_updates {
-        let mut nvrs: Vec<NVR> = Vec::new();
-
-        for build in &update.builds {
-            let (n, v, r) = parse_nvr(&build.nvr)?;
-            nvrs.push(NVR {
-                n: n.to_string(),
-                v: v.to_string(),
-                r: r.to_string(),
-            });
-        }
-
-        for nvr in nvrs {
-            if installed_packages.contains(&nvr) {
-                installed_unpushed.push(update);
-
-                builds_for_update
-                    .entry(update.alias.clone())
-                    .and_modify(|e| e.push(nvr.to_string()))
-                    .or_insert_with(|| vec![nvr.to_string()]);
-            };
-        }
-    }
+    let installed_unpushed = filter_installed_updates(&unpushed_updates, installed_packages, builds_for_update)?;
 
     if !installed_unpushed.is_empty() {
         println!("There are unpushed updates installed on this system.");
         println!("It is recommended to run 'dnf distro-sync' to clean this up.");
 
-        for update in installed_unpushed {
-            println!(" - {}:", update.title);
-            // this unwrap is safe since we definitely inserted a value for every update
-            for build in builds_for_update.get(update.alias.as_str()).unwrap() {
-                let mut binaries: Vec<&str> = Vec::new();
-                if let Some(list) = src_bin_map.get(build) {
-                    binaries.extend(list.iter().map(|s| s.as_str()));
-                };
-
-                for binary in binaries {
-                    println!("   - {}", binary);
-                }
-            }
-        }
+        print_update_builds(&installed_unpushed, src_bin_map, builds_for_update);
     };
 
     Ok(())

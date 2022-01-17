@@ -69,6 +69,7 @@ pub fn parse_nvr(nvr: &str) -> Result<(&str, &str, &str), String> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 

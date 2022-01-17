@@ -30,7 +30,6 @@ use config::{get_config, get_legacy_username};
 use ignore::{get_ignored, set_ignored};
 use input::{ask_feedback, Feedback, Progress};
 use nvr::NVR;
-use parse::parse_nvr;
 use query::{query_pending, query_testing};
 use secrets::{get_store_password, read_password};
 use sysinfo::{get_installation_times, get_installed, get_release, get_src_bin_map, get_summaries};
@@ -186,16 +185,11 @@ async fn main() -> Result<(), String> {
     let mut builds_for_update: HashMap<String, Vec<String>> = HashMap::new();
 
     for update in &relevant_updates {
-        let mut nvrs: Vec<NVR> = Vec::new();
-
-        for build in &update.builds {
-            let (n, v, r) = parse_nvr(&build.nvr)?;
-            nvrs.push(NVR {
-                n: n.to_string(),
-                v: v.to_string(),
-                r: r.to_string(),
-            });
-        }
+        let nvrs = update
+            .builds
+            .iter()
+            .map(|b| b.nvr.parse())
+            .collect::<Result<Vec<NVR>, String>>()?;
 
         for nvr in nvrs {
             if installed_packages.contains(&nvr) {

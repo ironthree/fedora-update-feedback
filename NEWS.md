@@ -84,9 +84,9 @@ Incremental improvements:
 
 - improve some error messages for password / keyring handling
 - cleaner and nicer "UI" when printing updates and asking for feedback
-- additionally show already existing comments when printing updates (including
-  the author's username, submission date, and associated karma)
-- additionally show the date & time an update was pushed to updates-testing
+- show already existing comments when printing updates (including the author's
+  username, submission date, and associated karma)
+- show the date & time an update was pushed to updates-testing
 
 # Release 0.5.0 "Forget-me-not" (Mar. 08, 2020)
 
@@ -161,7 +161,7 @@ Incremental improvements:
 
 - bug and testcase feedback are now enabled by default (and work)
 - the FAS username can be supplied via CLI argument as well
-- add CLI flag to also check updates in `pending` state
+- add a CLI flag to also check updates in `pending` state
 - bump `bodhi` dependency to 0.5.1
 
 # Release 0.1.2 "Prettify" (Jan. 21, 2020)

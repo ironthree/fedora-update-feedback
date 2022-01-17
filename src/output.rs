@@ -127,7 +127,7 @@ pub fn print_update(
             } else {
                 let spaces = w - 4 - update.alias.len();
                 let lspaces = " ".repeat(spaces / 2);
-                let rspaces = " ".repeat(if spaces % 2 == 1 { spaces / 2 + 1 } else { spaces / 2 });
+                let rspaces = " ".repeat((spaces / 2) + (spaces % 2));
                 format!("##{}{}{}##", &lspaces, &update.alias, &rspaces)
             };
             let banner = format!("{}\n{}\n{}", &boxie, &header, &boxie);
