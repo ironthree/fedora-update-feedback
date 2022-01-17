@@ -3,7 +3,7 @@ name = "fedora-update-feedback"
 description = "provide feedback for fedora updates (inspired by fedora-easy-karma)"
 license = "MIT OR Apache-2.0"
 
-version = "1.1.0"
+version = "2.0.0-dev"
 edition = "2018"
 
 authors = ["Fabio Valentini <decathorpe@gmail.com>"]
@@ -14,26 +14,24 @@ keywords = ["fedora", "bodhi", "updates", "feedback"]
 repository = "https://github.com/ironthree/fedora-update-feedback"
 
 [dependencies]
-bodhi = "^1.1"
-chrono = "^0.4"
-dirs = "^3.0.1"
-env_logger = "0.8.0"
+#bodhi = "^2"
+bodhi = { path = "../bodhi-rs" }
+chrono = "0.4.10"
+dirs = "3.0.1"
+env_logger = "0.9"
 log = "0.4.14"
-rpassword = "^5.0.0"
-rustyline = "^8.0.0"
-secret-service = "^2.0"
-serde = { version = "^1.0.104", features = ["derive"] }
-structopt = { version = "^0.3.8", features = ["color", "suggestions", "wrap_help"] }
-term_size = "^0.3.1"
-textwrap = "^0.14"
-toml = "^0.5.5"
+rpassword = "5"
+rustyline = "8"
+secret-service = "2"
+serde = { version = "1.0.104", features = ["derive"] }
+structopt = { version = "0.3.8", features = ["color", "suggestions", "wrap_help"] }
+term_size = "0.3.1"
+textwrap = "0.14"
+tokio = { version = "1.14", features = ["macros", "rt-multi-thread"] }
+toml = "0.5.5"
 
 [profile.release]
 codegen-units = 1
 lto = true
 opt-level = 3
-
-[features]
-# enable debugging features in bodhi-rs and fedora-rs
-debug = ["bodhi/debug"]
 
