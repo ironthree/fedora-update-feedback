@@ -1,6 +1,5 @@
-use std::fs::read_to_string;
-
 use serde::Deserialize;
+use tokio::fs::read_to_string;
 
 /// This struct represents the contents of a `~/.config/fedora.toml` file.
 /// It includes a mandatory `[FAS]` section, and optional sections for tools.
@@ -50,7 +49,7 @@ pub struct FUFConfig {
 }
 
 /// This helper function reads and parses the configuration file.
-pub fn get_config() -> Result<FedoraConfig, String> {
+pub async fn get_config() -> Result<FedoraConfig, String> {
     let home = match dirs::home_dir() {
         Some(path) => path,
         None => {
@@ -60,7 +59,7 @@ pub fn get_config() -> Result<FedoraConfig, String> {
 
     let config_path = home.join(".config/fedora.toml");
 
-    let config_str = match read_to_string(&config_path) {
+    let config_str = match read_to_string(&config_path).await {
         Ok(string) => string,
         Err(_) => {
             return Err(String::from(
@@ -82,7 +81,7 @@ pub fn get_config() -> Result<FedoraConfig, String> {
 }
 
 /// This helper function reads the username from the legacy `~/.fedora.upn` file.
-pub fn get_legacy_username() -> Result<Option<String>, String> {
+pub async fn get_legacy_username() -> Result<Option<String>, String> {
     let home = match dirs::home_dir() {
         Some(path) => path,
         None => {
@@ -92,7 +91,7 @@ pub fn get_legacy_username() -> Result<Option<String>, String> {
 
     let file_path = home.join(".fedora.upn");
 
-    let username = match read_to_string(&file_path) {
+    let username = match read_to_string(&file_path).await {
         Ok(string) => Some(string.trim().to_string()),
         Err(error) => {
             return if error.kind() == std::io::ErrorKind::NotFound {

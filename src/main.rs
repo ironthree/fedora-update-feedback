@@ -106,7 +106,7 @@ async fn main() -> Result<(), String> {
 
     let args: Command = Command::from_args();
 
-    let config = if let Ok(config) = get_config() {
+    let config = if let Ok(config) = get_config().await {
         Some(config)
     } else {
         None
@@ -116,7 +116,7 @@ async fn main() -> Result<(), String> {
         username.clone()
     } else if let Some(config) = &config {
         config.fas.username.clone()
-    } else if let Ok(Some(username)) = get_legacy_username() {
+    } else if let Ok(Some(username)) = get_legacy_username().await {
         username
     } else {
         return Err(String::from("Failed to read ~/.config/fedora.toml and ~/.fedora.upn."));
@@ -150,13 +150,13 @@ async fn main() -> Result<(), String> {
     };
 
     // query rpm for current release
-    let release = get_release()?;
+    let release = get_release().await?;
 
     // query DNF for installed packages
     println!("Querying dnf for installed packages ...");
-    let installed_packages = get_installed()?;
+    let installed_packages = get_installed().await?;
     // query DNF for source -> binary package map
-    let src_bin_map = get_src_bin_map()?;
+    let src_bin_map = get_src_bin_map().await?;
 
     println!("Querying bodhi for updates ...");
     let mut updates: Vec<Update> = Vec::new();
@@ -217,7 +217,7 @@ async fn main() -> Result<(), String> {
     let mut rl = rustyline::Editor::<()>::new();
 
     let mut ignored = if !args.clear_ignored {
-        match get_ignored() {
+        match get_ignored().await {
             Ok(ignored) => ignored,
             Err(_) => Vec::new(),
         }
@@ -229,10 +229,10 @@ async fn main() -> Result<(), String> {
     ignored.retain(|i| installed_updates.iter().map(|u| &u.alias).any(|x| x == i));
 
     // query dnf for package summaries
-    let summaries = get_summaries()?;
+    let summaries = get_summaries().await?;
 
     // query dnf for when the updates were installed
-    let install_times = get_installation_times()?;
+    let install_times = get_installation_times().await?;
 
     // get number of ignored updates
     let mut no_ignored = installed_updates.iter().filter(|u| ignored.contains(&u.alias)).count();
@@ -340,7 +340,7 @@ async fn main() -> Result<(), String> {
         };
     }
 
-    if let Err(error) = set_ignored(&ignored) {
+    if let Err(error) = set_ignored(&ignored).await {
         println!("Failed to write ignored updates to disk.");
         println!("{}", error);
     };

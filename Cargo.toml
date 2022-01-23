@@ -27,7 +27,7 @@ serde = { version = "1.0.104", features = ["derive"] }
 structopt = { version = "0.3.8", features = ["color", "suggestions", "wrap_help"] }
 term_size = "0.3.1"
 textwrap = "0.14"
-tokio = { version = "1.14", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.14", features = ["fs", "macros", "process", "rt-multi-thread"] }
 toml = "0.5.5"
 
 [profile.release]

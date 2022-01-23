@@ -1,8 +1,8 @@
 use std::collections::HashMap;
-use std::process::Command;
 
 use bodhi::FedoraRelease;
 use chrono::{DateTime, TimeZone, Utc};
+use tokio::process::Command;
 
 use crate::nvr::NVR;
 use crate::parse::parse_filename;
@@ -16,8 +16,8 @@ fn handle_status(code: Option<i32>, message: &str) -> Result<(), String> {
 }
 
 /// This helper function queries RPM for the value of `%{fedora}` on the current system.
-pub fn get_release() -> Result<FedoraRelease, String> {
-    let output = match Command::new("rpm").arg("--eval").arg("%{fedora}").output() {
+pub async fn get_release() -> Result<FedoraRelease, String> {
+    let output = match Command::new("rpm").arg("--eval").arg("%{fedora}").output().await {
         Ok(output) => output,
         Err(error) => {
             return Err(format!("{}", error));
@@ -46,7 +46,7 @@ pub fn get_release() -> Result<FedoraRelease, String> {
 
 /// This helper function queries `dnf` for the source package names of all currently installed
 /// packages.
-pub fn get_installed() -> Result<Vec<NVR>, String> {
+pub async fn get_installed() -> Result<Vec<NVR>, String> {
     // query dnf for installed packages
     let output = match Command::new("dnf")
         .arg("--quiet")
@@ -55,6 +55,7 @@ pub fn get_installed() -> Result<Vec<NVR>, String> {
         .arg("--installed")
         .arg("--source")
         .output()
+        .await
     {
         Ok(output) => output,
         Err(error) => {
@@ -87,7 +88,7 @@ pub fn get_installed() -> Result<Vec<NVR>, String> {
 }
 
 /// This helper function queries `dnf` for the `Summary` header of installed packages.
-pub fn get_summaries() -> Result<HashMap<String, String>, String> {
+pub async fn get_summaries() -> Result<HashMap<String, String>, String> {
     // query dnf for installed packages and their summaries
     let output = match Command::new("dnf")
         .arg("--quiet")
@@ -97,6 +98,7 @@ pub fn get_summaries() -> Result<HashMap<String, String>, String> {
         .arg("--qf")
         .arg("%{name}\t%{summary}")
         .output()
+        .await
     {
         Ok(output) => output,
         Err(error) => return Err(error.to_string()),
@@ -127,7 +129,7 @@ pub fn get_summaries() -> Result<HashMap<String, String>, String> {
 }
 
 /// This helper function returns a map from source -> binary package NVRs for installed packages.
-pub fn get_src_bin_map() -> Result<HashMap<String, Vec<String>>, String> {
+pub async fn get_src_bin_map() -> Result<HashMap<String, Vec<String>>, String> {
     // query dnf for installed binary packages and their corresponding source package
     let output = match Command::new("dnf")
         .arg("--quiet")
@@ -137,6 +139,7 @@ pub fn get_src_bin_map() -> Result<HashMap<String, Vec<String>>, String> {
         .arg("--qf")
         .arg("%{source_name}-%{version}-%{release} %{name}-%{version}-%{release}.%{arch}")
         .output()
+        .await
     {
         Ok(output) => output,
         Err(error) => return Err(error.to_string()),
@@ -173,7 +176,7 @@ pub fn get_src_bin_map() -> Result<HashMap<String, Vec<String>>, String> {
 }
 
 /// This helper function returns a map from binary packages to their installation times.
-pub fn get_installation_times() -> Result<HashMap<String, DateTime<Utc>>, String> {
+pub async fn get_installation_times() -> Result<HashMap<String, DateTime<Utc>>, String> {
     // query dnf for installed binary packages and their corresponding installation dates
     let output = match Command::new("dnf")
         .arg("--quiet")
@@ -183,6 +186,7 @@ pub fn get_installation_times() -> Result<HashMap<String, DateTime<Utc>>, String
         .arg("--qf")
         .arg("%{name}-%{version}-%{release}.%{arch}\t%{INSTALLTIME}")
         .output()
+        .await
     {
         Ok(output) => output,
         Err(error) => return Err(format!("{}", error)),
