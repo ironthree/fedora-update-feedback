@@ -1,4 +1,4 @@
-use bodhi::{BodhiClient, ContentType, FedoraRelease, Update, UpdateStatus};
+use bodhi::{BodhiClient, ContentType, FedoraRelease, QueryError, Update, UpdateStatus};
 
 use crate::output::progress_bar;
 
@@ -19,7 +19,21 @@ pub async fn query_testing(bodhi: &BodhiClient, release: FedoraRelease) -> Resul
     let testing_updates = match bodhi.paginated_request(&testing_query).await {
         Ok(updates) => updates,
         Err(error) => {
-            return Err(error.to_string());
+            return if let QueryError::BodhiError { error } = error {
+                let mut messages: Vec<String> = Vec::new();
+                for errmsg in error.errors {
+                    for (key, value) in errmsg {
+                        messages.push(format!("{}: {}", key, value));
+                    }
+                }
+                Err(format!(
+                    "Internal server error:\n{}\n{}\n",
+                    error.status,
+                    messages.join("\n")
+                ))
+            } else {
+                Err(error.to_string())
+            }
         },
     };
 
