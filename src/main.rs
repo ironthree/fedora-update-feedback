@@ -11,7 +11,7 @@
 use std::collections::HashMap;
 
 use bodhi::error::QueryError;
-use bodhi::*;
+use bodhi::{BodhiClientBuilder, BugFeedbackData, CommentCreator, Karma, NewComment, TestCaseFeedbackData, Update};
 use structopt::StructOpt;
 
 mod checks;
@@ -138,7 +138,7 @@ async fn main() -> Result<(), String> {
 
     // query bodhi for packages in updates-testing
     println!("Authenticating with bodhi ...");
-    let bodhi = match BodhiServiceBuilder::default()
+    let bodhi = match BodhiClientBuilder::default()
         .authentication(&username, &password)
         .build()
         .await
@@ -162,13 +162,13 @@ async fn main() -> Result<(), String> {
     let mut updates: Vec<Update> = Vec::new();
 
     // get updates in "testing" state
-    let testing_updates = query_testing(&bodhi, &release).await?;
+    let testing_updates = query_testing(&bodhi, release.clone()).await?;
     updates.extend(testing_updates);
     println!();
 
     if do_check_pending(&args, config.as_ref()) {
         // get updates in "pending" state
-        let pending_updates = query_pending(&bodhi, &release).await?;
+        let pending_updates = query_pending(&bodhi, release.clone()).await?;
         updates.extend(pending_updates);
         println!();
     };
@@ -305,13 +305,17 @@ async fn main() -> Result<(), String> {
                     builder = builder.text(text);
                 };
 
-                for (id, karma) in bug_feedback {
-                    builder = builder.bug_feedback(id, karma);
-                }
+                let bug_feedbacks: Vec<BugFeedbackData> = bug_feedback
+                    .into_iter()
+                    .map(|(id, karma)| BugFeedbackData::new(id, karma))
+                    .collect();
+                builder = builder.bug_feedback(&bug_feedbacks);
 
-                for (name, karma) in testcase_feedback {
-                    builder = builder.testcase_feedback(name, karma);
-                }
+                let testcase_feedbacks: Vec<TestCaseFeedbackData> = testcase_feedback
+                    .into_iter()
+                    .map(|(name, karma)| TestCaseFeedbackData::new(name, karma))
+                    .collect();
+                builder = builder.testcase_feedback(&testcase_feedbacks);
 
                 let new_comment: Result<NewComment, QueryError> = bodhi.request(&builder).await;
 
@@ -344,7 +348,7 @@ async fn main() -> Result<(), String> {
     if do_check_obsoletes(&args, config.as_ref()) {
         obsoleted_check(
             &bodhi,
-            &release,
+            release.clone(),
             &installed_packages,
             &src_bin_map,
             &mut builds_for_update,
@@ -355,7 +359,7 @@ async fn main() -> Result<(), String> {
     if do_check_unpushed(&args, config.as_ref()) {
         unpushed_check(
             &bodhi,
-            &release,
+            release.clone(),
             &installed_packages,
             &src_bin_map,
             &mut builds_for_update,

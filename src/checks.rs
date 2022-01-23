@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use bodhi::{BodhiService, FedoraRelease, Update};
+use bodhi::{BodhiClient, FedoraRelease, Update};
 
 use crate::config::FedoraConfig;
 use crate::nvr::NVR;
@@ -112,8 +112,8 @@ fn print_update_builds(
 }
 
 pub async fn obsoleted_check(
-    bodhi: &BodhiService,
-    release: &FedoraRelease,
+    bodhi: &BodhiClient,
+    release: FedoraRelease,
     installed_packages: &[NVR],
     src_bin_map: &HashMap<String, Vec<String>>,
     builds_for_update: &mut HashMap<String, Vec<String>>,
@@ -135,8 +135,8 @@ pub async fn obsoleted_check(
 }
 
 pub async fn unpushed_check(
-    bodhi: &BodhiService,
-    release: &FedoraRelease,
+    bodhi: &BodhiClient,
+    release: FedoraRelease,
     installed_packages: &[NVR],
     src_bin_map: &HashMap<String, Vec<String>>,
     builds_for_update: &mut HashMap<String, Vec<String>>,
