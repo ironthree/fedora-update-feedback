@@ -44,6 +44,8 @@ pub enum Feedback<'a> {
     Skip,
     /// Cancel providing feedback for all remaining updates.
     Abort,
+    /// Add this package to the list of permanently ignored packages
+    Block,
     /// These values are used when submitting feedback.
     Values {
         /// comment text (can be multiple lines)
@@ -100,6 +102,7 @@ pub fn ask_feedback<'a>(
         Ignore,
         Abort,
         Comment,
+        Block,
     }
 
     println!(
@@ -117,7 +120,7 @@ pub fn ask_feedback<'a>(
         println!("This update has been previously marked as ignored.");
     }
 
-    let action = match get_input("Action ([S]kip / [i]gnore / [c]omment / [a]bort)")
+    let action = match get_input("Action ([S]kip / [i]gnore / [c]omment / [b]lock / [a]bort)")
         .to_lowercase()
         .as_str()
     {
@@ -125,6 +128,7 @@ pub fn ask_feedback<'a>(
         "i" => Action::Ignore,
         "c" => Action::Comment,
         "a" => Action::Abort,
+        "b" => Action::Block,
         _ => Action::Skip,
     };
 
@@ -135,6 +139,10 @@ pub fn ask_feedback<'a>(
     if let Action::Ignore = action {
         return Ok(Feedback::Ignore);
     };
+
+    if let Action::Block = action {
+        return Ok(Feedback::Block);
+    }
 
     if let Action::Abort = action {
         return Ok(Feedback::Abort);

@@ -25,6 +25,7 @@ mod query;
 mod secrets;
 mod sysinfo;
 
+use crate::ignore::IgnoreLists;
 use checks::{do_check_obsoletes, do_check_pending, do_check_unpushed, obsoleted_check, unpushed_check};
 use config::{get_config, get_legacy_username};
 use ignore::{get_ignored, set_ignored};
@@ -78,6 +79,15 @@ pub struct Command {
     /// Ignore password stored in session keyring
     #[structopt(long)]
     ignore_keyring: bool,
+    /// Add a package name to the list of ignored packages
+    #[structopt(long, short = "A")]
+    add_ignored_package: Option<String>,
+    /// Remove a package name from the list of ignored packages
+    #[structopt(long, short = "R")]
+    remove_ignored_package: Option<String>,
+    /// Print the list of ignored packages and updates
+    #[structopt(long, short = "p")]
+    print_ignored: bool,
 }
 
 fn has_already_commented(update: &Update, user: &str) -> bool {
@@ -105,6 +115,68 @@ async fn main() -> Result<(), String> {
         .init();
 
     let args: Command = Command::from_args();
+
+    let mut ignored = if !args.clear_ignored {
+        match get_ignored().await {
+            Ok(ignored) => ignored,
+            Err(_) => IgnoreLists::default(),
+        }
+    } else {
+        IgnoreLists::default()
+    };
+
+    if let Some(package) = &args.add_ignored_package {
+        if !ignored.ignored_packages.contains(package) {
+            println!("Added '{}' to the list of ignored packages.", &package);
+            ignored.ignored_packages.push(package.clone());
+            ignored.ignored_updates.sort();
+            set_ignored(&ignored).await?;
+        } else {
+            println!("Already in the list of ignored packages: '{}'", &package);
+        };
+    }
+
+    if let Some(package) = &args.remove_ignored_package {
+        if ignored.ignored_packages.contains(package) {
+            println!("Removed '{}' from the list of ignored packages.", &package);
+            ignored.ignored_packages.retain(|p| p != package);
+            set_ignored(&ignored).await?;
+        } else {
+            println!("Not in the list of ignored packages: '{}'", &package);
+        };
+    }
+
+    if args.print_ignored {
+        println!(
+            "Ignored updates:{}",
+            if ignored.ignored_updates.is_empty() {
+                " none"
+            } else {
+                ""
+            }
+        );
+        for update in &ignored.ignored_updates {
+            println!("- {}", update);
+        }
+        println!();
+
+        println!(
+            "Ignored packages:{}",
+            if ignored.ignored_packages.is_empty() {
+                " none"
+            } else {
+                ""
+            }
+        );
+        for package in &ignored.ignored_packages {
+            println!("- {}", package);
+        }
+        println!();
+    }
+
+    if args.add_ignored_package.is_some() || args.remove_ignored_package.is_some() {
+        return Ok(());
+    }
 
     let config = if let Ok(config) = get_config().await {
         Some(config)
@@ -216,17 +288,10 @@ async fn main() -> Result<(), String> {
 
     let mut rl = rustyline::Editor::<()>::new();
 
-    let mut ignored = if !args.clear_ignored {
-        match get_ignored().await {
-            Ok(ignored) => ignored,
-            Err(_) => Vec::new(),
-        }
-    } else {
-        Vec::new()
-    };
-
     // remove old updates from ignored list
-    ignored.retain(|i| installed_updates.iter().map(|u| &u.alias).any(|x| x == i));
+    ignored
+        .ignored_updates
+        .retain(|i| installed_updates.iter().map(|u| &u.alias).any(|x| x == i));
 
     // query dnf for package summaries
     let summaries = get_summaries().await?;
@@ -234,12 +299,31 @@ async fn main() -> Result<(), String> {
     // query dnf for when the updates were installed
     let install_times = get_installation_times().await?;
 
+    // filter out updates that exclusively contain permanently ignored packages
+    installed_updates.retain(|update| {
+        let names: Vec<String> = update
+            .builds
+            .iter()
+            .map(|build| {
+                build
+                    .nvr
+                    .parse::<NVR>()
+                    .expect("Failed to parse a build NVR from bodhi, this should not happen.")
+                    .n
+            })
+            .collect();
+        !names.iter().all(|name| ignored.ignored_packages.contains(name))
+    });
+
     // get number of ignored updates
-    let mut no_ignored = installed_updates.iter().filter(|u| ignored.contains(&u.alias)).count();
+    let mut no_ignored = installed_updates
+        .iter()
+        .filter(|u| ignored.ignored_updates.contains(&u.alias))
+        .count();
     let no_updates = installed_updates.len();
 
     for (update_no, update) in installed_updates.into_iter().enumerate() {
-        let previously_ignored = ignored.contains(&update.alias);
+        let previously_ignored = ignored.ignored_updates.contains(&update.alias);
         if previously_ignored && !args.check_ignored {
             println!("Skipping ignored update: {}", &update.alias);
             continue;
@@ -279,7 +363,27 @@ async fn main() -> Result<(), String> {
             Feedback::Ignore => {
                 println!("Ignoring.");
                 println!();
-                ignored.push(update.alias.clone());
+                ignored.ignored_updates.push(update.alias.clone());
+                ignored.ignored_updates.sort();
+                no_ignored += 1;
+                continue;
+            },
+            Feedback::Block => {
+                println!("Permanently ignoring all packages from this update.");
+                println!();
+                let names: Vec<String> = update
+                    .builds
+                    .iter()
+                    .map(|build| {
+                        build
+                            .nvr
+                            .parse::<NVR>()
+                            .expect("Failed to parse a build NVR from bodhi, this should not happen.")
+                            .n
+                    })
+                    .collect();
+                ignored.ignored_packages.extend(names);
+                ignored.ignored_packages.sort();
                 no_ignored += 1;
                 continue;
             },
