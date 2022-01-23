@@ -1,3 +1,12 @@
+# Release 2.0.0-beta.1 "Modern Times" (January 23, 2022)
+
+New features:
+
+- add possibility to permanently ignore updates for certain packages
+  (`--add-ignored-package` CLI flag, `[b]lock` action)
+- add `--print-ignored` flag to print ignored updates and packages
+- print a warning if the `updates-testing` repository is not enabled
+
 # Release 1.1.0 "Cookie Monster" (September 24, 2021)
 
 Improvements:

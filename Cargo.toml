@@ -3,7 +3,7 @@ name = "fedora-update-feedback"
 description = "provide feedback for fedora updates (inspired by fedora-easy-karma)"
 license = "MIT OR Apache-2.0"
 
-version = "2.0.0-dev"
+version = "2.0.0-beta.1"
 edition = "2018"
 
 authors = ["Fabio Valentini <decathorpe@gmail.com>"]
@@ -14,8 +14,7 @@ keywords = ["fedora", "bodhi", "updates", "feedback"]
 repository = "https://github.com/ironthree/fedora-update-feedback"
 
 [dependencies]
-#bodhi = "^2"
-bodhi = { path = "../bodhi-rs" }
+bodhi = "2.0.0-beta.1"
 chrono = "0.4.10"
 dirs = "3.0.1"
 env_logger = "0.9"
