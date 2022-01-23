@@ -33,21 +33,32 @@ use input::{ask_feedback, Feedback, Progress};
 use nvr::NVR;
 use query::{query_pending, query_testing};
 use secrets::{get_store_password, read_password};
-use sysinfo::{get_installation_times, get_installed, get_release, get_src_bin_map, get_summaries};
+use sysinfo::{
+    get_installation_times,
+    get_installed,
+    get_release,
+    get_src_bin_map,
+    get_summaries,
+    is_update_testing_enabled,
+};
 
 /// There are some features that are configurable with the config file located at
 /// ~/.config/fedora.toml.
 ///
+/// The [FAS] section is expected to have a value for the "username" key. If this
+/// is not the case, the legacy method for determining usernames (reading the
+/// "~/.fedora.upn" file) is used.
+///
 /// The [fedora-update-feedback] section can contain values for:
 ///
-/// check-obsoleted: Corresponds to the --check-obsoleted CLI switch - additionally
-/// checks whether obsoleted updates are installed on the system.
+/// check-pending = bool: Additionally queries bodhi for updates that are still pending;
+/// equivalent to using the --check-pending CLI switch.
 ///
-/// check-pending: Corresponds to the --check-pending CLI switch - additionally
-/// queries bodhi for updates that are still pending.
+/// check-obsoleted = bool: Run additional checks whether obsoleted updates are installed on the
+/// system; equivalent to using to the --check-obsoleted CLI switch.
 ///
-/// check-unpushed: Corresponds to the --check-unpushed CLI switch - additionally
-/// checks whether unpushed updates are installed on the system.
+/// check-unpushed = bool: Run additional checks whether unpushed updates are installed on the
+/// system; equivalent to using the --check-unpushed CLI switch.
 ///
 /// save-password: Try to saves the FAS password in the session keyring. To ignore
 /// a password that was stored in the session keyring (for example, if you changed
@@ -176,6 +187,11 @@ async fn main() -> Result<(), String> {
 
     if args.add_ignored_package.is_some() || args.remove_ignored_package.is_some() {
         return Ok(());
+    }
+
+    if !is_update_testing_enabled().await? {
+        println!("WARNING: The 'updates-testing' repository does not seem to be enabled.");
+        println!("         Functionality of fedora-update-feedback will be very limited.")
     }
 
     let config = if let Ok(config) = get_config().await {

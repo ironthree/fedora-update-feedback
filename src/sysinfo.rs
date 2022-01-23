@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use bodhi::FedoraRelease;
+use bodhi::{FedoraRelease, InvalidValueError};
 use chrono::{DateTime, TimeZone, Utc};
 use tokio::process::Command;
 
@@ -17,38 +17,49 @@ fn handle_status(code: Option<i32>, message: &str) -> Result<(), String> {
 
 /// This helper function queries RPM for the value of `%{fedora}` on the current system.
 pub async fn get_release() -> Result<FedoraRelease, String> {
-    let output = match Command::new("rpm").arg("--eval").arg("%{fedora}").output().await {
-        Ok(output) => output,
-        Err(error) => {
-            return Err(format!("{}", error));
-        },
-    };
+    // use RPM to expand the `%{fedora}` macro
+    let output = Command::new("rpm")
+        .arg("--eval")
+        .arg("%{fedora}")
+        .output()
+        .await
+        .map_err(|error| error.to_string())?;
 
     handle_status(output.status.code(), "Failed to run rpm.")?;
 
-    let release_num = match std::str::from_utf8(&output.stdout) {
-        Ok(result) => result,
-        Err(error) => {
-            return Err(format!("{}", error));
-        },
-    }
-    .trim();
+    let release_num = std::str::from_utf8(&output.stdout)
+        .map_err(|error| error.to_string())?
+        .trim();
 
     let release = format!("F{}", release_num);
 
-    let release: FedoraRelease = match release.parse() {
-        Ok(release) => release,
-        Err(error) => return Err(error.to_string()),
-    };
+    let release: FedoraRelease = release.parse().map_err(|error: InvalidValueError| error.to_string())?;
 
     Ok(release)
+}
+
+/// This helper function queries `dnf` whether the "updates-testing" repository is enabled.
+pub async fn is_update_testing_enabled() -> Result<bool, String> {
+    // query dnf for enabled repositories, limiting results to those matching "updates-testing"
+    let output = Command::new("dnf")
+        .arg("repolist")
+        .arg("--enabled")
+        .arg("updates-testing")
+        .output()
+        .await
+        .map_err(|error| error.to_string())?;
+
+    handle_status(output.status.code(), "Failed to query dnf.")?;
+
+    // if standard output is empty, the repository is not enabled
+    Ok(!output.stdout.is_empty())
 }
 
 /// This helper function queries `dnf` for the source package names of all currently installed
 /// packages.
 pub async fn get_installed() -> Result<Vec<NVR>, String> {
     // query dnf for installed packages
-    let output = match Command::new("dnf")
+    let output = Command::new("dnf")
         .arg("--quiet")
         .arg("repoquery")
         .arg("--cacheonly")
@@ -56,21 +67,11 @@ pub async fn get_installed() -> Result<Vec<NVR>, String> {
         .arg("--source")
         .output()
         .await
-    {
-        Ok(output) => output,
-        Err(error) => {
-            return Err(format!("{}", error));
-        },
-    };
+        .map_err(|error| error.to_string())?;
 
     handle_status(output.status.code(), "Failed to query dnf.")?;
 
-    let installed = match std::str::from_utf8(&output.stdout) {
-        Ok(result) => result,
-        Err(error) => {
-            return Err(format!("{}", error));
-        },
-    };
+    let installed = std::str::from_utf8(&output.stdout).map_err(|error| error.to_string())?;
 
     let lines: Vec<&str> = installed.trim().split('\n').collect();
 
@@ -90,7 +91,7 @@ pub async fn get_installed() -> Result<Vec<NVR>, String> {
 /// This helper function queries `dnf` for the `Summary` header of installed packages.
 pub async fn get_summaries() -> Result<HashMap<String, String>, String> {
     // query dnf for installed packages and their summaries
-    let output = match Command::new("dnf")
+    let output = Command::new("dnf")
         .arg("--quiet")
         .arg("repoquery")
         .arg("--cacheonly")
@@ -99,22 +100,14 @@ pub async fn get_summaries() -> Result<HashMap<String, String>, String> {
         .arg("%{name}\t%{summary}")
         .output()
         .await
-    {
-        Ok(output) => output,
-        Err(error) => return Err(error.to_string()),
-    };
+        .map_err(|error| error.to_string())?;
 
     handle_status(output.status.code(), "Failed to query dnf.")?;
 
-    let results = match std::str::from_utf8(&output.stdout) {
-        Ok(result) => result,
-        Err(error) => return Err(error.to_string()),
-    };
-
+    let results = std::str::from_utf8(&output.stdout).map_err(|error| error.to_string())?;
     let lines: Vec<&str> = results.trim().split('\n').collect();
 
     let mut summaries: HashMap<String, String> = HashMap::new();
-
     for line in lines {
         let mut split = line.split('\t');
         match (split.next(), split.next(), split.next()) {
@@ -131,7 +124,7 @@ pub async fn get_summaries() -> Result<HashMap<String, String>, String> {
 /// This helper function returns a map from source -> binary package NVRs for installed packages.
 pub async fn get_src_bin_map() -> Result<HashMap<String, Vec<String>>, String> {
     // query dnf for installed binary packages and their corresponding source package
-    let output = match Command::new("dnf")
+    let output = Command::new("dnf")
         .arg("--quiet")
         .arg("repoquery")
         .arg("--cacheonly")
@@ -140,22 +133,14 @@ pub async fn get_src_bin_map() -> Result<HashMap<String, Vec<String>>, String> {
         .arg("%{source_name}-%{version}-%{release} %{name}-%{version}-%{release}.%{arch}")
         .output()
         .await
-    {
-        Ok(output) => output,
-        Err(error) => return Err(error.to_string()),
-    };
+        .map_err(|error| error.to_string())?;
 
     handle_status(output.status.code(), "Failed to query dnf.")?;
 
-    let results = match std::str::from_utf8(&output.stdout) {
-        Ok(result) => result,
-        Err(error) => return Err(format!("{}", error)),
-    };
-
+    let results = std::str::from_utf8(&output.stdout).map_err(|error| error.to_string())?;
     let lines: Vec<&str> = results.trim().split('\n').collect();
 
     let mut pkg_map: HashMap<String, Vec<String>> = HashMap::new();
-
     for line in lines {
         let parts: Vec<&str> = line.split(' ').collect();
 
@@ -178,7 +163,7 @@ pub async fn get_src_bin_map() -> Result<HashMap<String, Vec<String>>, String> {
 /// This helper function returns a map from binary packages to their installation times.
 pub async fn get_installation_times() -> Result<HashMap<String, DateTime<Utc>>, String> {
     // query dnf for installed binary packages and their corresponding installation dates
-    let output = match Command::new("dnf")
+    let output = Command::new("dnf")
         .arg("--quiet")
         .arg("repoquery")
         .arg("--cacheonly")
@@ -187,22 +172,14 @@ pub async fn get_installation_times() -> Result<HashMap<String, DateTime<Utc>>, 
         .arg("%{name}-%{version}-%{release}.%{arch}\t%{INSTALLTIME}")
         .output()
         .await
-    {
-        Ok(output) => output,
-        Err(error) => return Err(format!("{}", error)),
-    };
+        .map_err(|error| error.to_string())?;
 
     handle_status(output.status.code(), "Failed to query dnf.")?;
 
-    let results = match std::str::from_utf8(&output.stdout) {
-        Ok(result) => result,
-        Err(error) => return Err(format!("{}", error)),
-    };
-
+    let results = std::str::from_utf8(&output.stdout).map_err(|error| error.to_string())?;
     let lines: Vec<&str> = results.trim().split('\n').collect();
 
     let mut pkg_map: HashMap<String, DateTime<Utc>> = HashMap::new();
-
     for line in lines {
         let parts: Vec<&str> = line.split('\t').collect();
 
