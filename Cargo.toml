@@ -3,7 +3,7 @@ name = "fedora-update-feedback"
 description = "provide feedback for fedora updates (inspired by fedora-easy-karma)"
 license = "MIT OR Apache-2.0"
 
-version = "2.0.0-beta.1"
+version = "2.0.0-beta.2"
 edition = "2021"
 rust-version = "1.56.0"
 

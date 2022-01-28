@@ -1,3 +1,11 @@
+# Release 2.0.0-beta.2 "Spring Cleaning" (January 28, 2022)
+
+This beta release mostly consists of minor code cleanups, and small improvements
+for error messages and output formatting.
+
+One notable change is the introduction of a build script that generates bash
+completions for the fedora-update-feedback CLI during the build process.
+
 # Release 2.0.0-beta.1 "Modern Times" (January 23, 2022)
 
 New features:
