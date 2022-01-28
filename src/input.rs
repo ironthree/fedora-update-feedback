@@ -4,32 +4,24 @@ use std::io::{stdin, stdout, Write};
 use bodhi::{Karma, Update};
 use chrono::{DateTime, Utc};
 
-use crate::output::{print_update, proper_plural};
+use crate::output::print_update;
 
 /// This struct represents the user's progress through the list of installed updates.
 #[derive(Debug)]
 pub struct Progress {
-    update_no: usize,
-    no_updates: usize,
-    no_ignored: usize,
-    already_commented: bool,
-    previously_ignored: bool,
+    update_number: usize,
+    total_updates: usize,
+    prev_commented: bool,
+    prev_ignored: bool,
 }
 
 impl Progress {
-    pub fn new(
-        update_no: usize,
-        no_updates: usize,
-        no_ignored: usize,
-        already_commented: bool,
-        previously_ignored: bool,
-    ) -> Progress {
+    pub fn new(update_number: usize, total_updates: usize, prev_commented: bool, prev_ignored: bool) -> Progress {
         Progress {
-            update_no,
-            no_updates,
-            no_ignored,
-            already_commented,
-            previously_ignored,
+            update_number,
+            total_updates,
+            prev_commented,
+            prev_ignored,
         }
     }
 }
@@ -106,17 +98,17 @@ pub fn ask_feedback<'a>(
     }
 
     println!(
-        "This is update {} out of {} (including {}).",
-        progress.update_no + 1,
-        proper_plural(progress.no_updates as i64, "available update"),
-        proper_plural(progress.no_ignored as i64, "ignored update"),
+        "Updates considered: {}, Updates remaining: {}",
+        progress.update_number,
+        progress.total_updates - progress.update_number - 1
     );
 
-    if progress.already_commented {
-        println!("Feedback for this update has already been submitted.");
+    if progress.prev_commented {
+        println!("A comment for this update has already been submitted.");
+        println!("Any feedback / karma that is provided now will overwrite previous values.");
     }
 
-    if progress.previously_ignored {
+    if progress.prev_ignored {
         println!("This update has been previously marked as ignored.");
     }
 

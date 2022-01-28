@@ -266,3 +266,15 @@ pub fn print_update(
 
     println!();
 }
+
+pub fn print_server_messages(caveats: &[HashMap<String, String>]) {
+    if caveats.is_empty() {
+        println!("Server messages:");
+
+        for caveat in caveats {
+            for (key, value) in caveat {
+                println!("- {}: {}", key, value);
+            }
+        }
+    }
+}

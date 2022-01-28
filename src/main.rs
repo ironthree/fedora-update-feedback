@@ -32,6 +32,7 @@ use config::{get_config, get_legacy_username};
 use ignore::{get_ignored, set_ignored, IgnoreLists};
 use input::{ask_feedback, Feedback, Progress};
 use nvr::NVR;
+use output::print_server_messages;
 use query::{query_pending, query_testing};
 use secrets::{get_store_password, read_password};
 use sysinfo::{
@@ -300,32 +301,27 @@ async fn main() -> Result<(), String> {
         !names.iter().all(|name| ignored.ignored_packages.contains(name))
     });
 
-    // get number of ignored updates
-    let mut no_ignored = installed_updates
-        .iter()
-        .filter(|u| ignored.ignored_updates.contains(&u.alias))
-        .count();
-    let no_updates = installed_updates.len();
+    // filter out previously ignored updates
+    if !args.check_ignored {
+        installed_updates.retain(|update| !ignored.ignored_updates.contains(&update.alias));
+    }
 
-    for (update_no, update) in installed_updates.into_iter().enumerate() {
-        let previously_ignored = ignored.ignored_updates.contains(&update.alias);
-        if previously_ignored && !args.check_ignored {
-            println!("Skipping ignored update: {}", &update.alias);
-            continue;
-        };
+    // filter out previusly commented on updates
+    if !args.check_commented {
+        installed_updates.retain(|update| !has_already_commented(update, &username));
+    }
 
-        let already_commented = has_already_commented(update, &username);
-        if already_commented && !args.check_commented {
-            println!(
-                "Skipping update for which feedback was already submitted: {}",
-                &update.alias
-            );
-            continue;
-        }
+    // keep track of the number of installed relevant updates
+    let total_updates = installed_updates.len();
 
-        let progress = Progress::new(update_no, no_updates, no_ignored, already_commented, previously_ignored);
+    // iterate over the list of installed relevant updates
+    for (update_number, update) in installed_updates.into_iter().enumerate() {
+        let prev_commented = has_already_commented(update, &username);
+        let prev_ignored = ignored.ignored_updates.contains(&update.alias);
 
-        // this unwrap is safe since we definitely inserted a value for every update
+        let progress = Progress::new(update_number, total_updates, prev_commented, prev_ignored);
+
+        // this unwrap is safe since we definitely inserted a value for every update earlier
         let builds = builds_for_update.get(update.alias.as_str()).unwrap();
 
         let mut binaries: Vec<&str> = Vec::new();
@@ -353,7 +349,6 @@ async fn main() -> Result<(), String> {
                 println!();
                 ignored.ignored_updates.push(update.alias.clone());
                 ignored.ignored_updates.sort();
-                no_ignored += 1;
                 continue;
             },
             Feedback::Block => {
@@ -362,7 +357,6 @@ async fn main() -> Result<(), String> {
                 let names = packages_in_update(update);
                 ignored.ignored_packages.extend(names);
                 ignored.ignored_packages.sort();
-                no_ignored += 1;
                 continue;
             },
             Feedback::Skip => {
@@ -404,26 +398,17 @@ async fn main() -> Result<(), String> {
                 match new_comment {
                     Ok(value) => {
                         println!("Comment created.");
-
-                        if !value.caveats.is_empty() {
-                            println!("Server messages:");
-
-                            for caveat in &value.caveats {
-                                for (key, value) in caveat {
-                                    println!("- {}: {}", key, value);
-                                }
-                            }
-                        }
+                        print_server_messages(&value.caveats);
                     },
                     Err(error) => {
                         println!("{}", error);
-                        continue;
                     },
                 };
             },
         };
     }
 
+    // update list of ignored updates
     if let Err(error) = set_ignored(&ignored).await {
         println!("Failed to write ignored updates to disk.");
         println!("{}", error);
