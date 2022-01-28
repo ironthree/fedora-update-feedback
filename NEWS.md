@@ -1,3 +1,8 @@
+# Release 2.0.0-beta.3 "Fix the Fix" (January 28, 2022)
+
+This beta release only changes the way bash completions are generated to
+un-break `cargo package` and `cargo publish`.
+
 # Release 2.0.0-beta.2 "Spring Cleaning" (January 28, 2022)
 
 This beta release mostly consists of minor code cleanups, and small improvements
