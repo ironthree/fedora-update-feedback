@@ -50,6 +50,21 @@ fn has_already_commented(update: &Update, user: &str) -> bool {
         .map_or(false, |comments| comments.iter().any(|c| c.user.name == user))
 }
 
+fn packages_in_update(update: &Update) -> Vec<String> {
+    let names: Vec<String> = update
+        .builds
+        .iter()
+        .map(|build| {
+            build
+                .nvr
+                .parse::<NVR>()
+                .expect("Failed to parse a build NVR from bodhi, this should not happen.")
+                .n
+        })
+        .collect();
+    names
+}
+
 #[tokio::main]
 async fn main() -> Result<(), String> {
     // set up logger for warnings / debug messages
@@ -125,6 +140,8 @@ async fn main() -> Result<(), String> {
             println!("- {}", package);
         }
         println!();
+
+        return Ok(());
     }
 
     if args.add_ignored_package.is_some() || args.remove_ignored_package.is_some() {
@@ -133,14 +150,10 @@ async fn main() -> Result<(), String> {
 
     if !is_update_testing_enabled().await? {
         println!("WARNING: The 'updates-testing' repository does not seem to be enabled.");
-        println!("         Functionality of fedora-update-feedback will be very limited.")
+        println!("         Usefulness of fedora-update-feedback will be limited.")
     }
 
-    let config = if let Ok(config) = get_config().await {
-        Some(config)
-    } else {
-        None
-    };
+    let config = get_config().await.ok();
 
     let username = if let Some(username) = &args.username {
         username.clone()
@@ -152,7 +165,9 @@ async fn main() -> Result<(), String> {
         return Err(String::from("Failed to read ~/.config/fedora.toml and ~/.fedora.upn."));
     };
 
-    println!("Username: {}", &username);
+    if args.verbose {
+        println!("Username: {}", &username);
+    }
 
     // read password from libsecret-1 or fall back to command line prompt
     let password = match &config {
@@ -166,42 +181,69 @@ async fn main() -> Result<(), String> {
         None => read_password(),
     };
 
-    // query bodhi for packages in updates-testing
-    println!("Authenticating with bodhi ...");
-    let bodhi = match BodhiClientBuilder::default()
+    if args.verbose {
+        println!("Authenticating with bodhi ...");
+    }
+    let bodhi = BodhiClientBuilder::default()
         .authentication(&username, &password)
         .build()
         .await
-    {
-        Ok(bodhi) => bodhi,
-        Err(error) => {
-            return Err(format!("{}", error));
-        },
-    };
+        .map_err(|error| error.to_string())?;
 
-    // query rpm for current release
+    // query rpm for the current Fedora release number
+    if args.verbose {
+        println!("Querying RPM for the current Fedora release number ...");
+    }
     let release = get_release().await?;
 
     // query DNF for installed packages
-    println!("Querying dnf for installed packages ...");
+    if args.verbose {
+        println!("Querying dnf for installed packages ...");
+    }
     let installed_packages = get_installed().await?;
+
     // query DNF for source -> binary package map
+    if args.verbose {
+        println!("Querying dnf for mapping between source and binary packages ...");
+    }
     let src_bin_map = get_src_bin_map().await?;
 
-    println!("Querying bodhi for updates ...");
+    // query dnf for package summaries
+    if args.verbose {
+        println!("Querying dnf for package summaries ...");
+    }
+    let summaries = get_summaries().await?;
+
+    // query dnf for when the updates were installed
+    if args.verbose {
+        println!("Querying dnf for package installation times ...");
+    }
+    let install_times = get_installation_times().await?;
+
+    // query bodhi for packages in updates-testing
     let mut updates: Vec<Update> = Vec::new();
 
     // get updates in "testing" state
+    if args.verbose {
+        println!("Querying bodhi for 'testing' updates ...");
+    }
     let testing_updates = query_testing(&bodhi, release.clone()).await?;
     updates.extend(testing_updates);
     println!();
 
     if do_check_pending(&args, config.as_ref()) {
         // get updates in "pending" state
+        if args.verbose {
+            println!("Querying bodhi for 'pending' updates ...");
+        }
         let pending_updates = query_pending(&bodhi, release.clone()).await?;
         updates.extend(pending_updates);
         println!();
     };
+
+    if args.verbose {
+        println!();
+    }
 
     // filter out updates created by the current user
     let relevant_updates: Vec<Update> = updates
@@ -234,6 +276,7 @@ async fn main() -> Result<(), String> {
     }
 
     if installed_updates.is_empty() {
+        println!("No updates that are waiting for feedback are currently installed.");
         return Ok(());
     };
 
@@ -251,25 +294,9 @@ async fn main() -> Result<(), String> {
         .ignored_updates
         .retain(|i| installed_updates.iter().map(|u| &u.alias).any(|x| x == i));
 
-    // query dnf for package summaries
-    let summaries = get_summaries().await?;
-
-    // query dnf for when the updates were installed
-    let install_times = get_installation_times().await?;
-
     // filter out updates that exclusively contain permanently ignored packages
     installed_updates.retain(|update| {
-        let names: Vec<String> = update
-            .builds
-            .iter()
-            .map(|build| {
-                build
-                    .nvr
-                    .parse::<NVR>()
-                    .expect("Failed to parse a build NVR from bodhi, this should not happen.")
-                    .n
-            })
-            .collect();
+        let names = packages_in_update(update);
         !names.iter().all(|name| ignored.ignored_packages.contains(name))
     });
 
@@ -289,7 +316,10 @@ async fn main() -> Result<(), String> {
 
         let already_commented = has_already_commented(update, &username);
         if already_commented && !args.check_commented {
-            println!("Skipping update that already has user feedback: {}", &update.alias);
+            println!(
+                "Skipping update for which feedback was already submitted: {}",
+                &update.alias
+            );
             continue;
         }
 
@@ -329,17 +359,7 @@ async fn main() -> Result<(), String> {
             Feedback::Block => {
                 println!("Permanently ignoring all packages from this update.");
                 println!();
-                let names: Vec<String> = update
-                    .builds
-                    .iter()
-                    .map(|build| {
-                        build
-                            .nvr
-                            .parse::<NVR>()
-                            .expect("Failed to parse a build NVR from bodhi, this should not happen.")
-                            .n
-                    })
-                    .collect();
+                let names = packages_in_update(update);
                 ignored.ignored_packages.extend(names);
                 ignored.ignored_packages.sort();
                 no_ignored += 1;

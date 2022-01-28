@@ -57,4 +57,7 @@ pub struct Command {
     /// Print the list of ignored packages and updates
     #[structopt(long, short = "p")]
     pub print_ignored: bool,
+    /// Print more progress information and command output
+    #[structopt(long, short = "v")]
+    pub verbose: bool,
 }
