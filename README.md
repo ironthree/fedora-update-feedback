@@ -92,7 +92,6 @@ Either way, `cargo` will install the binary into `~/.cargo/bin` by default.
 To make it available in `$PATH`, either copy it into `$HOME/.local/bin`, or add
 `~/.cargo/bin` to your `$PATH` (probably by editing `~/.bash_profile`).
 
-
 ### development + debugging
 
 By default, no "structured" log messages from `fedora-update-feedback` or any
@@ -103,10 +102,6 @@ turned on by setting the `FUF_LOG` environment variable:
 ```
 FUF_LOG=debug cargo run
 ```
-
-When building `fedora-update-feedback` with the `debug` feature, the `debug`
-log level is set as the default, otherwise, the default level is `info`.
-
 
 ### TODO
 

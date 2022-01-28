@@ -15,6 +15,7 @@ use bodhi::{BodhiClientBuilder, BugFeedbackData, CommentCreator, Karma, NewComme
 use structopt::StructOpt;
 
 mod checks;
+mod cli;
 mod config;
 mod ignore;
 mod input;
@@ -25,10 +26,10 @@ mod query;
 mod secrets;
 mod sysinfo;
 
-use crate::ignore::IgnoreLists;
 use checks::{do_check_obsoletes, do_check_pending, do_check_unpushed, obsoleted_check, unpushed_check};
+use cli::Command;
 use config::{get_config, get_legacy_username};
-use ignore::{get_ignored, set_ignored};
+use ignore::{get_ignored, set_ignored, IgnoreLists};
 use input::{ask_feedback, Feedback, Progress};
 use nvr::NVR;
 use query::{query_pending, query_testing};
@@ -41,65 +42,6 @@ use sysinfo::{
     get_summaries,
     is_update_testing_enabled,
 };
-
-/// There are some features that are configurable with the config file located at
-/// ~/.config/fedora.toml.
-///
-/// The [FAS] section is expected to have a value for the "username" key. If this
-/// is not the case, the legacy method for determining usernames (reading the
-/// "~/.fedora.upn" file) is used.
-///
-/// The [fedora-update-feedback] section can contain values for:
-///
-/// check-pending = bool: Additionally queries bodhi for updates that are still pending;
-/// equivalent to using the --check-pending CLI switch.
-///
-/// check-obsoleted = bool: Run additional checks whether obsoleted updates are installed on the
-/// system; equivalent to using to the --check-obsoleted CLI switch.
-///
-/// check-unpushed = bool: Run additional checks whether unpushed updates are installed on the
-/// system; equivalent to using the --check-unpushed CLI switch.
-///
-/// save-password: Try to saves the FAS password in the session keyring. To ignore
-/// a password that was stored in the session keyring (for example, if you changed
-/// it, or made a typo when it was prompted), use the --ignore-keyring CLI switch
-/// to ask for the password again.
-#[derive(Debug, StructOpt)]
-pub struct Command {
-    /// Override or provide FAS username
-    #[structopt(long, short)]
-    username: Option<String>,
-    /// Check for installed obsolete updates
-    #[structopt(long, short = "O")]
-    check_obsoleted: bool,
-    /// Include updates in "pending" state
-    #[structopt(long, short = "P")]
-    check_pending: bool,
-    /// Include updates that were already commented on
-    #[structopt(long, short = "c")]
-    check_commented: bool,
-    /// Include updates that were previously ignored
-    #[structopt(long, short = "I")]
-    check_ignored: bool,
-    /// Check for installed unpushed updates
-    #[structopt(long, short = "U")]
-    check_unpushed: bool,
-    /// Clear ignored updates
-    #[structopt(long, short = "i")]
-    clear_ignored: bool,
-    /// Ignore password stored in session keyring
-    #[structopt(long)]
-    ignore_keyring: bool,
-    /// Add a package name to the list of ignored packages
-    #[structopt(long, short = "A")]
-    add_ignored_package: Option<String>,
-    /// Remove a package name from the list of ignored packages
-    #[structopt(long, short = "R")]
-    remove_ignored_package: Option<String>,
-    /// Print the list of ignored packages and updates
-    #[structopt(long, short = "p")]
-    print_ignored: bool,
-}
 
 fn has_already_commented(update: &Update, user: &str) -> bool {
     update
@@ -447,7 +389,9 @@ async fn main() -> Result<(), String> {
                             println!("Server messages:");
 
                             for caveat in &value.caveats {
-                                println!("- {:?}", caveat);
+                                for (key, value) in caveat {
+                                    println!("- {}: {}", key, value);
+                                }
                             }
                         }
                     },
