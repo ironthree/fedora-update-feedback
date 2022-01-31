@@ -44,6 +44,8 @@ use sysinfo::{
     is_update_testing_enabled,
 };
 
+const USER_AGENT: &str = concat!("fedora-update-feedback v", env!("CARGO_PKG_VERSION"));
+
 fn has_already_commented(update: &Update, user: &str) -> bool {
     update
         .comments
@@ -186,6 +188,7 @@ async fn main() -> Result<(), String> {
         println!("Authenticating with bodhi ...");
     }
     let bodhi = BodhiClientBuilder::default()
+        .user_agent(USER_AGENT)
         .authentication(&username, &password)
         .build()
         .await
@@ -278,6 +281,29 @@ async fn main() -> Result<(), String> {
 
     if installed_updates.is_empty() {
         println!("No updates that are waiting for feedback are currently installed.");
+
+        if do_check_obsoletes(&args, config.as_ref()) {
+            obsoleted_check(
+                &bodhi,
+                release.clone(),
+                &installed_packages,
+                &src_bin_map,
+                &mut builds_for_update,
+            )
+            .await?;
+        };
+
+        if do_check_unpushed(&args, config.as_ref()) {
+            unpushed_check(
+                &bodhi,
+                release.clone(),
+                &installed_packages,
+                &src_bin_map,
+                &mut builds_for_update,
+            )
+            .await?;
+        };
+
         return Ok(());
     };
 
