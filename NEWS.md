@@ -1,3 +1,16 @@
+# Release 2.0.0 "Finally" (February 01, 2022)
+
+This release contains only minor code changes compared to the previous beta:
+
+- slightly improved progress reporting
+- use custom User-Agent header for HTTP requests
+
+Additionally, some crate dependencies were updated to match the versions that
+are available from Fedora repositories (at the time of publishing).
+
+For a complete list of changes since `v1.1.0`, read the release notes for the
+last three beta releases.
+
 # Release 2.0.0-beta.3 "Fix the Fix" (January 28, 2022)
 
 This beta release only changes the way bash completions are generated to
