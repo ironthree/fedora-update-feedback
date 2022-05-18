@@ -15,8 +15,7 @@ keywords = ["fedora", "bodhi", "updates", "feedback"]
 repository = "https://github.com/ironthree/fedora-update-feedback"
 
 [dependencies]
-#bodhi = "2.1.0"
-bodhi = { path = "../bodhi-rs" }
+bodhi = "2.0.1"
 chrono = "0.4.19"
 dirs = "4"
 env_logger = "0.9"
