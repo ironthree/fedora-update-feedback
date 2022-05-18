@@ -348,6 +348,7 @@ async fn main() -> Result<(), String> {
         let progress = Progress::new(update_number, total_updates, prev_commented, prev_ignored);
 
         // this unwrap is safe since we definitely inserted a value for every update earlier
+        #[allow(clippy::unwrap_used)]
         let builds = builds_for_update.get(update.alias.as_str()).unwrap();
 
         let mut binaries: Vec<&str> = Vec::new();

@@ -98,6 +98,7 @@ fn print_update_builds(
     for update in updates {
         println!(" - {}:", update.title);
         // this unwrap is safe since we definitely inserted a value for every update
+        #[allow(clippy::unwrap_used)]
         for build in builds_for_update.get(update.alias.as_str()).unwrap() {
             let mut binaries: Vec<&str> = Vec::new();
             if let Some(list) = src_bin_map.get(build) {

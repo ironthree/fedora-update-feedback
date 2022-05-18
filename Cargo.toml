@@ -1,9 +1,9 @@
 [package]
 name = "fedora-update-feedback"
-description = "Provide feedback for fedora updates (inspired by fedora-easy-karma)"
+description = "Provide feedback for Fedora updates (inspired by fedora-easy-karma)"
 license = "MIT OR Apache-2.0"
 
-version = "2.0.0"
+version = "2.0.1-dev"
 edition = "2021"
 rust-version = "1.56.0"
 
@@ -15,7 +15,8 @@ keywords = ["fedora", "bodhi", "updates", "feedback"]
 repository = "https://github.com/ironthree/fedora-update-feedback"
 
 [dependencies]
-bodhi = "2.0.0"
+#bodhi = "2.1.0"
+bodhi = { path = "../bodhi-rs" }
 chrono = "0.4.19"
 dirs = "3.0.2"
 env_logger = "0.9"

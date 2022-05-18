@@ -148,7 +148,10 @@ pub async fn get_src_bin_map() -> Result<HashMap<String, Vec<String>>, String> {
             return Err(String::from("Failed to parse dnf output."));
         };
 
+        // these unwraps are safe because the length is definitely 2
+        #[allow(clippy::unwrap_used)]
         let source = parts.get(0).unwrap();
+        #[allow(clippy::unwrap_used)]
         let binary = parts.get(1).unwrap();
 
         pkg_map
@@ -187,7 +190,10 @@ pub async fn get_installation_times() -> Result<HashMap<String, DateTime<Utc>>, 
             return Err(format!("Failed to parse dnf output: {}", line));
         };
 
+        // these unwraps are safe because the length is definitely 2
+        #[allow(clippy::unwrap_used)]
         let binary = parts.get(0).unwrap();
+        #[allow(clippy::unwrap_used)]
         let installtime = parts.get(1).unwrap();
 
         let datetime = match Utc.datetime_from_str(installtime, "%Y-%m-%d %H:%M") {
