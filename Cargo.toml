@@ -18,7 +18,7 @@ repository = "https://github.com/ironthree/fedora-update-feedback"
 #bodhi = "2.1.0"
 bodhi = { path = "../bodhi-rs" }
 chrono = "0.4.19"
-dirs = "3.0.2"
+dirs = "4"
 env_logger = "0.9"
 log = "0.4.14"
 rpassword = "5.0.1"
