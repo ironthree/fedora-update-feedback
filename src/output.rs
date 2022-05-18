@@ -83,16 +83,6 @@ pub fn print_update(
     summaries: &HashMap<String, String>,
     install_times: &HashMap<String, DateTime<Utc>>,
 ) {
-    let submitted_date = match &update.date_submitted {
-        Some(date) => date.to_string(),
-        None => "(None)".to_string(),
-    };
-
-    let pushed_date = match &update.date_pushed {
-        Some(date) => date.to_string(),
-        None => "(not yet pushed)".to_string(),
-    };
-
     let karma = match update.karma {
         Some(karma) => karma.to_string(),
         None => "?".to_string(),
@@ -166,8 +156,15 @@ pub fn print_update(
         &update.alias
     );
     println!("Update type:    {}", update.update_type);
-    println!("Submitted:      {}", submitted_date);
-    println!("Pushed:         {}", pushed_date);
+
+    // special-case some properties that are not always correctly set by bodhi servers
+    if let Some(ref submitted_date) = update.date_submitted {
+        println!("Submitted:      {}", submitted_date);
+    }
+    if let Some(ref pushed_date) = update.date_pushed {
+        println!("Pushed:         {}", pushed_date);
+    }
+
     println!("Submitter:      {}", update.user.name);
     println!("Karma:          {}", karma);
     println!("Stable karma:   {}", stable_karma);
