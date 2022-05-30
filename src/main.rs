@@ -46,11 +46,28 @@ use sysinfo::{
 
 const USER_AGENT: &str = concat!("fedora-update-feedback v", env!("CARGO_PKG_VERSION"));
 
-fn has_already_commented(update: &Update, user: &str) -> bool {
-    update
-        .comments
-        .as_ref()
-        .map_or(false, |comments| comments.iter().any(|c| c.user.name == user))
+fn has_already_commented(update: &Update, user: &str) -> (bool, bool) {
+    if let Some(comments) = update.comments.as_ref() {
+        let mut already_commented = false;
+        let mut reset = false;
+
+        comments.iter().for_each(|comment| {
+            // user has commented, so karma reset either never happened or happened before the comment
+            if comment.user.name == user && comment.karma != Karma::Neutral {
+                already_commented = true;
+                reset = false;
+            }
+            // bodhi has reset karma, so old comments can be disregarded
+            if comment.user.name == "bodhi" && comment.text.contains("Karma") && comment.text.contains("reset") {
+                already_commented = false;
+                reset = true;
+            }
+        });
+
+        (already_commented, reset)
+    } else {
+        (false, false)
+    }
 }
 
 fn packages_in_update(update: &Update) -> Vec<String> {
@@ -332,20 +349,20 @@ async fn main() -> Result<(), String> {
         installed_updates.retain(|update| !ignored.ignored_updates.contains(&update.alias));
     }
 
-    // filter out previusly commented on updates
-    if !args.check_commented {
-        installed_updates.retain(|update| !has_already_commented(update, &username));
-    }
-
     // keep track of the number of installed relevant updates
     let total_updates = installed_updates.len();
 
     // iterate over the list of installed relevant updates
     for (update_number, update) in installed_updates.into_iter().enumerate() {
-        let prev_commented = has_already_commented(update, &username);
+        let (prev_commented, karma_reset) = has_already_commented(update, &username);
         let prev_ignored = ignored.ignored_updates.contains(&update.alias);
 
-        let progress = Progress::new(update_number, total_updates, prev_commented, prev_ignored);
+        // skip updates that were already commented on and where no karma reset has happened
+        if !args.check_commented && prev_commented && !karma_reset {
+            continue;
+        }
+
+        let progress = Progress::new(update_number, total_updates, prev_commented, karma_reset, prev_ignored);
 
         // this unwrap is safe since we definitely inserted a value for every update earlier
         #[allow(clippy::unwrap_used)]

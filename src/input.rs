@@ -12,15 +12,23 @@ pub struct Progress {
     update_number: usize,
     total_updates: usize,
     prev_commented: bool,
+    karma_reset: bool,
     prev_ignored: bool,
 }
 
 impl Progress {
-    pub fn new(update_number: usize, total_updates: usize, prev_commented: bool, prev_ignored: bool) -> Progress {
+    pub fn new(
+        update_number: usize,
+        total_updates: usize,
+        prev_commented: bool,
+        karma_reset: bool,
+        prev_ignored: bool,
+    ) -> Progress {
         Progress {
             update_number,
             total_updates,
             prev_commented,
+            karma_reset,
             prev_ignored,
         }
     }
@@ -104,8 +112,13 @@ pub fn ask_feedback<'a>(
     );
 
     if progress.prev_commented {
-        println!("A comment for this update has already been submitted.");
-        println!("Any feedback / karma that is provided now will overwrite previous values.");
+        if progress.karma_reset {
+            println!("A comment for this update has already been submitted.");
+            println!("However, the update has since been edited, and karma has been reset.");
+        } else {
+            println!("A comment for this update has already been submitted.");
+            println!("Any feedback / karma that is provided now will overwrite previous values.");
+        }
     }
 
     if progress.prev_ignored {

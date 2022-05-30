@@ -6,7 +6,7 @@ use std::str::FromStr;
 use crate::parse::parse_nvr;
 
 /// This struct encapsulates a parsed NVR string.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct NVR {
     /// name of the package
