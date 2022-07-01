@@ -1,3 +1,11 @@
+# Release 2.0.2 "Invert" (July 1, 2022)
+
+This release only includes a fix for a minor logic error: Previously, any
+server messages that were returned when posting a comment to bodhi were
+always ignored, but lists of empty server messages were printed. This release
+inverts the behaviour to the correct one (server messages are printed if - and
+only if - the server actually returned messages).
+
 # Release 2.0.1 "Optimize" (May 30, 2022)
 
 This release includes some minor changes, including:
