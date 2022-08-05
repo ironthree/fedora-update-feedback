@@ -16,7 +16,7 @@ repository = "https://github.com/ironthree/fedora-update-feedback"
 
 [dependencies]
 bodhi = "2.0.1"
-chrono = "0.4.19"
+chrono = { version = "0.4.19", features = ["clock", "std"], default-features = false }
 dirs = "4"
 env_logger = "0.9"
 log = "0.4.14"
