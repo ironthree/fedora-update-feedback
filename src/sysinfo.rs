@@ -150,6 +150,7 @@ pub async fn get_src_bin_map() -> Result<HashMap<String, Vec<String>>, String> {
 
         // these unwraps are safe because the length is definitely 2
         #[allow(clippy::unwrap_used)]
+        #[allow(clippy::get_first)]
         let source = parts.get(0).unwrap();
         #[allow(clippy::unwrap_used)]
         let binary = parts.get(1).unwrap();
@@ -192,6 +193,7 @@ pub async fn get_installation_times() -> Result<HashMap<String, DateTime<Utc>>, 
 
         // these unwraps are safe because the length is definitely 2
         #[allow(clippy::unwrap_used)]
+        #[allow(clippy::get_first)]
         let binary = parts.get(0).unwrap();
         #[allow(clippy::unwrap_used)]
         let installtime = parts.get(1).unwrap();
