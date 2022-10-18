@@ -20,7 +20,7 @@ chrono = { version = "0.4.19", features = ["clock", "std"], default-features = f
 dirs = "4"
 env_logger = "0.9"
 log = "0.4.14"
-rpassword = "5.0.1"
+rpassword = "7"
 rustyline = "8.2.0"
 secret-service = "2.0.1"
 serde = { version = "1.0.134", features = ["derive"] }

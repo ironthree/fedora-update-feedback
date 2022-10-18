@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 /// This function prompts the user for their FAS password.
 pub fn read_password() -> String {
-    rpassword::prompt_password_stdout("FAS Password: ").expect("Failed to read password from stdin.")
+    rpassword::prompt_password("FAS Password: ").expect("Failed to read password from stdin.")
 }
 
 /// This function asks for and stores the password in the session keyring.
