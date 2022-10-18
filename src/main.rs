@@ -331,8 +331,8 @@ async fn main() -> Result<(), String> {
     // sort updates by submission date
     installed_updates.sort_by(|a, b| a.date_submitted.cmp(&b.date_submitted));
 
-    let mut rl = rustyline::Editor::<()>::new()
-        .map_err(|error| format!("Failed to initialize readline backend: {}", error))?;
+    let mut rl =
+        rustyline::Editor::<()>::new().map_err(|error| format!("Failed to initialize readline backend: {}", error))?;
 
     // remove old updates from ignored list
     ignored
