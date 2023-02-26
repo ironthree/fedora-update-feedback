@@ -331,9 +331,6 @@ async fn main() -> Result<(), String> {
     // sort updates by submission date
     installed_updates.sort_by(|a, b| a.date_submitted.cmp(&b.date_submitted));
 
-    let mut rl =
-        rustyline::Editor::<()>::new().map_err(|error| format!("Failed to initialize readline backend: {}", error))?;
-
     // remove old updates from ignored list
     ignored
         .ignored_updates
@@ -376,18 +373,13 @@ async fn main() -> Result<(), String> {
             };
         }
 
-        let feedback = ask_feedback(&mut rl, update, progress, &binaries, &summaries, &install_times)?;
+        let feedback = ask_feedback(update, progress, &binaries, &summaries, &install_times).await?;
 
         match feedback {
             Feedback::Abort => {
                 println!("Aborting.");
                 println!();
                 break;
-            },
-            Feedback::Cancel => {
-                println!("Cancelling.");
-                println!();
-                continue;
             },
             Feedback::Ignore => {
                 println!("Ignoring.");

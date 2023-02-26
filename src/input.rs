@@ -1,10 +1,46 @@
 use std::collections::HashMap;
+use std::env;
 use std::io::{stdin, stdout, Write};
 
 use bodhi::{Karma, Update};
 use chrono::{DateTime, Utc};
+use tokio::process::Command;
 
 use crate::output::print_update;
+
+const DEFAULT_EDITOR: &str = "nano";
+
+fn detect_editor() -> String {
+    if let Ok(editor) = env::var("EDITOR") {
+        editor
+    } else if let Ok(editor) = env::var("VISUAL") {
+        editor
+    } else {
+        DEFAULT_EDITOR.to_string()
+    }
+}
+
+async fn get_comment_from_editor() -> Result<Option<String>, String> {
+    let editor = detect_editor();
+
+    let temp_file = tempfile::Builder::new()
+        .suffix(".md")
+        .tempfile()
+        .map_err(|err| err.to_string())?;
+
+    let mut cmd = Command::new(editor);
+    cmd.arg(temp_file.path());
+    cmd.status().await.map_err(|err| err.to_string())?;
+
+    let output = tokio::fs::read_to_string(temp_file)
+        .await
+        .map_err(|err| err.to_string())?;
+
+    match output.trim() {
+        "" => Ok(None),
+        _ => Ok(Some(output)),
+    }
+}
 
 /// This struct represents the user's progress through the list of installed updates.
 #[derive(Debug)]
@@ -36,8 +72,6 @@ impl Progress {
 
 /// This enum contains all feedback information for an update that's been parsed from CLI input.
 pub enum Feedback<'a> {
-    /// Cancel providing feedback for the current update.
-    Cancel,
     /// Ignore this update now and in the future.
     Ignore,
     /// With this input, the current update is skipped.
@@ -87,8 +121,7 @@ pub fn str_to_karma(string: &str) -> Option<Karma> {
 ///    automatically; two empty lines or EOF (`Ctrl-D`) ends comment input)
 ///
 /// If enabled at compile time, it also asks for bug and testcase feedback.
-pub fn ask_feedback<'a>(
-    rl: &mut rustyline::Editor<()>,
+pub async fn ask_feedback<'a>(
     update: &'a Update,
     progress: Progress,
     builds: &[&str],
@@ -153,39 +186,7 @@ pub fn ask_feedback<'a>(
         return Ok(Feedback::Abort);
     }
 
-    println!("Add a descriptive comment (two empty lines or EOF (Ctrl-D) end input):");
-    let mut comment_lines: Vec<String> = Vec::new();
-
-    loop {
-        match rl.readline("Comment: ") {
-            Ok(line) => {
-                rl.add_history_entry(&line);
-
-                if !comment_lines.is_empty() {
-                    // if both the last line and the current line are empty, break
-                    if comment_lines
-                        .last()
-                        .expect("Something went wrong. There must be a last item in a non-empty iterable.")
-                        .is_empty()
-                        && line.is_empty()
-                    {
-                        break;
-                    };
-                };
-
-                comment_lines.push(line);
-            },
-            Err(rustyline::error::ReadlineError::Eof) => break,
-            Err(rustyline::error::ReadlineError::Interrupted) => return Ok(Feedback::Cancel),
-            Err(error) => return Err(error.to_string()),
-        }
-    }
-
-    let comment = match comment_lines.join("\n").trim() {
-        "" => None,
-        x => Some(x.to_string()),
-    };
-
+    let comment = get_comment_from_editor().await?;
     let karma = str_to_karma(get_input("Karma (+1, 0, -1)").as_str());
 
     if let (None, None) = (&comment, &karma) {
@@ -230,10 +231,14 @@ pub fn ask_feedback<'a>(
 
     println!();
 
-    Ok(Feedback::Values {
-        comment,
-        karma,
-        bug_feedback,
-        testcase_feedback,
-    })
+    if comment.is_none() && karma == Karma::Neutral && bug_feedback.is_empty() && testcase_feedback.is_empty() {
+        Ok(Feedback::Skip)
+    } else {
+        Ok(Feedback::Values {
+            comment,
+            karma,
+            bug_feedback,
+            testcase_feedback,
+        })
+    }
 }
