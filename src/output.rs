@@ -269,8 +269,8 @@ pub fn print_server_messages(caveats: &[HashMap<String, String>]) {
         println!("Server messages:");
 
         for caveat in caveats {
-            for (key, value) in caveat {
-                println!("- {}: {}", key, value);
+            for (_key, value) in caveat {
+                println!("- {}", value);
             }
         }
     }

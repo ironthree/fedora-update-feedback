@@ -158,10 +158,13 @@ pub async fn ask_feedback<'a>(
         println!("This update has been previously marked as ignored.");
     }
 
-    let action = match get_input("Action ([S]kip / [i]gnore / [c]omment / [b]lock / [a]bort)")
-        .to_lowercase()
-        .as_str()
-    {
+    println!("Actions: [s] skip this update (default)");
+    println!("       / [i] ignore this update permanently");
+    println!("       / [c] comment with feedback (opens an external editor)");
+    println!("       / [b] block (ignore all packages from this update permanently)");
+    println!("       / [a] abort (exit program)");
+
+    let action = match get_input("Action").to_lowercase().as_str() {
         "s" => Action::Skip,
         "i" => Action::Ignore,
         "c" => Action::Comment,
