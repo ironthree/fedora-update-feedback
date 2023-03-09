@@ -17,6 +17,7 @@ repository = "https://github.com/ironthree/fedora-update-feedback"
 [dependencies]
 bodhi = "2.0.1"
 chrono = { version = "0.4.19", features = ["clock", "std"], default-features = false }
+clap = { version = "4", features = ["derive", "color", "suggestions", "wrap_help"]}
 dirs = "4"
 env_logger = "0.9"
 log = "0.4.14"
@@ -24,7 +25,6 @@ rpassword = "7"
 secret-service = "2.0.1"
 serde = { version = "1.0.134", features = ["derive"] }
 serde_json = "1.0.78"
-structopt = { version = "0.3.25", features = ["color", "suggestions", "wrap_help"] }
 tempfile = "3.3.0"
 term_size = "0.3.2"
 textwrap = "0.15.1"
@@ -32,7 +32,8 @@ tokio = { version = "1.14", features = ["fs", "macros", "process", "rt-multi-thr
 toml = "0.5.8"
 
 [build-dependencies]
-structopt = "0.3.25"
+clap = { version = "4", features = ["derive"]}
+clap_complete = "4"
 
 [profile.release]
 codegen-units = 1

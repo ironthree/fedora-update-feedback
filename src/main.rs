@@ -12,7 +12,7 @@ use std::collections::HashMap;
 
 use bodhi::error::QueryError;
 use bodhi::{BodhiClientBuilder, BugFeedbackData, CommentCreator, Karma, NewComment, TestCaseFeedbackData, Update};
-use structopt::StructOpt;
+use clap::Parser;
 
 mod checks;
 mod cli;
@@ -102,7 +102,7 @@ async fn main() -> Result<(), String> {
         .filter_module("rustyline", log::LevelFilter::Off)
         .init();
 
-    let args: Command = Command::from_args();
+    let args: Command = Command::parse();
 
     let mut ignored = if !args.clear_ignored {
         match get_ignored().await {
