@@ -1,3 +1,8 @@
+# Release 2.1.0 "Pretty" (March 10, 2023)
+
+This release makes some console output prettier and updates some dependencies
+to the latest versions.
+
 # Release 2.0.2 "Invert" (July 1, 2022)
 
 This release only includes a fix for a minor logic error: Previously, any
