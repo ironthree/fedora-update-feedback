@@ -19,7 +19,7 @@ bodhi = "2.0.1"
 chrono = { version = "0.4.19", features = ["clock", "std"], default-features = false }
 clap = { version = "4", features = ["derive", "color", "suggestions", "wrap_help"]}
 dirs = "4"
-env_logger = "0.9"
+env_logger = "0.10"
 log = "0.4.14"
 rpassword = "7"
 secret-service = "2.0.1"
