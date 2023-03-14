@@ -1,3 +1,8 @@
+# Release 2.1.1 "Simple" (March 14, 2023)
+
+- Simplify code for printing server messages.
+- Revert back to using rpassword v5 for now.
+
 # Release 2.1.0 "Pretty" (March 10, 2023)
 
 This release makes some console output prettier and updates some dependencies
