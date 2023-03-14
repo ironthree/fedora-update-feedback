@@ -269,7 +269,7 @@ pub fn print_server_messages(caveats: &[HashMap<String, String>]) {
         println!("Server messages:");
 
         for caveat in caveats {
-            for (_key, value) in caveat {
+            for value in caveat.values() {
                 println!("- {}", value);
             }
         }
