@@ -173,7 +173,7 @@ pub async fn get_installation_times() -> Result<HashMap<String, DateTime<Utc>>, 
         .arg("--cacheonly")
         .arg("--installed")
         .arg("--qf")
-        .arg("%{name}-%{version}-%{release}.%{arch}\t%{INSTALLTIME}")
+        .arg("%{name}-%{version}-%{release}.%{arch}\t%{installtime}")
         .output()
         .await
         .map_err(|error| error.to_string())?;
