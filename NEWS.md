@@ -1,3 +1,7 @@
+# Release 2.1.2 "Werk Around" (April 10, 2023)
+
+- Apply a workaround to fix repository queries with DNF 4.15.
+
 # Release 2.1.1 "Simple" (March 14, 2023)
 
 - Simplify code for printing server messages.
