@@ -29,7 +29,7 @@ tempfile = "3.3.0"
 term_size = "0.3.2"
 textwrap = "0.16"
 tokio = { version = "1.14", features = ["fs", "macros", "process", "rt-multi-thread"] }
-toml = "0.5.8"
+toml = "0.8"
 
 [build-dependencies]
 clap = { version = "4", features = ["derive"]}
