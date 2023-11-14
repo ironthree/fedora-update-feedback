@@ -193,7 +193,7 @@ async fn main() -> Result<(), String> {
     let password = match &config {
         Some(config) => match &config.fuf {
             Some(fuf) => match fuf.save_password {
-                Some(x) if x => get_store_password(args.ignore_keyring)?,
+                Some(x) if x => get_store_password(args.ignore_keyring).await?,
                 _ => read_password(),
             },
             None => read_password(),
