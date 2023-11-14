@@ -3,7 +3,7 @@
 
 //! This crate contains the `fedora-update-feedback` binary and some helper functionality. If
 //! something turns out to be generally useful, it can be upstreamed into either the
-//! [`fedora`][fedora-rs] or [`bodhi`][bodhi] crates.
+//! [`fedora`][fedora] or [`bodhi`][bodhi] crates.
 //!
 //! [fedora-rs]: https://crates.io/crates/fedora
 //! [bodhi-rs]: https://crates.io/crates/bodhi
