@@ -9,7 +9,7 @@ rust-version = "1.70.0"
 
 authors = ["Fabio Valentini <decathorpe@gmail.com>"]
 readme = "README.md"
-exclude = ["/.github/", "/rustfmt.toml"]
+exclude = ["/.github/", "/deny.toml", "/rustfmt.toml"]
 categories = ["command-line-utilities"]
 keywords = ["fedora", "bodhi", "updates", "feedback"]
 repository = "https://github.com/ironthree/fedora-update-feedback"
