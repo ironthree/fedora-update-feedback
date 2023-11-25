@@ -3,6 +3,7 @@ use std::io::{stdout, Write};
 
 use bodhi::{Comment, Update};
 use chrono::{DateTime, Duration, Utc};
+use terminal_size::{terminal_size, Width};
 
 use crate::parse::parse_nvr;
 
@@ -12,8 +13,8 @@ use crate::parse::parse_nvr;
 ///
 /// It's necessary to print a newline character after the progress bar reaches 100%.
 pub fn progress_bar(prefix: &str, p: u32, ps: u32) {
-    let columns: u32 = match term_size::dimensions() {
-        Some((w, _)) => w as u32,
+    let columns: u32 = match terminal_size() {
+        Some((Width(width), _)) => width as u32,
         None => return,
     };
 
@@ -108,8 +109,9 @@ pub fn print_update(
     println!();
 
     // block for pretty-printing width-constrained strings
-    match term_size::dimensions() {
-        Some((w, _)) => {
+    match terminal_size() {
+        Some((Width(width), _)) => {
+            let w = width as usize;
             // construct a nice header banner for the update
             let boxie = "#".repeat(w);
             let header = if update.alias.len() > (w - 6) {
@@ -186,8 +188,9 @@ pub fn print_update(
 
             if let Some(title) = title {
                 // make sure bug title doesn't contain words that are split across lines
-                match term_size::dimensions() {
-                    Some((w, _)) => {
+                match terminal_size() {
+                    Some((Width(width), _)) => {
+                        let w = width as usize;
                         println!("{}", textwrap::indent(&textwrap::fill(title.trim(), w - 3), "  "));
                     },
                     None => {
@@ -247,8 +250,9 @@ pub fn print_update(
                 println!("- {} ({}): {}", &comment.user.name, &comment.timestamp, &comment.karma);
 
                 let trimmed = comment.text.trim();
-                match term_size::dimensions() {
-                    Some((w, _)) => {
+                match terminal_size() {
+                    Some((Width(width), _)) => {
+                        let w = width as usize;
                         if !trimmed.is_empty() {
                             println!("{}", textwrap::indent(&textwrap::fill(trimmed, w - 3), "  "));
                         }
