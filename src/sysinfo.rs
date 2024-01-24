@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use bodhi::{FedoraRelease, InvalidValueError};
-use chrono::{DateTime, TimeZone, Utc};
+use chrono::{DateTime, NaiveDateTime, Utc};
 use tokio::process::Command;
 
 use crate::nvr::NVR;
@@ -72,8 +72,7 @@ pub async fn get_installed() -> Result<Vec<NVR>, String> {
     handle_status(output.status.code(), "Failed to query dnf.")?;
 
     let installed = std::str::from_utf8(&output.stdout).map_err(|error| error.to_string())?;
-
-    let lines: Vec<&str> = installed.trim().split('\n').collect();
+    let lines = installed.trim().lines();
 
     let mut packages: Vec<NVR> = Vec::new();
     for line in lines {
@@ -105,7 +104,7 @@ pub async fn get_summaries() -> Result<HashMap<String, String>, String> {
     handle_status(output.status.code(), "Failed to query dnf.")?;
 
     let results = std::str::from_utf8(&output.stdout).map_err(|error| error.to_string())?;
-    let lines: Vec<&str> = results.trim().split('\n').collect();
+    let lines = results.trim().lines();
 
     let mut summaries: HashMap<String, String> = HashMap::new();
     for line in lines {
@@ -142,18 +141,12 @@ pub async fn get_src_bin_map() -> Result<HashMap<String, Vec<String>>, String> {
 
     let mut pkg_map: HashMap<String, Vec<String>> = HashMap::new();
     for line in lines {
-        let parts: Vec<&str> = line.split(' ').collect();
+        let mut parts = line.split(' ');
 
-        if parts.len() != 2 {
-            return Err(String::from("Failed to parse dnf output."));
+        let (source, binary) = match (parts.next(), parts.next(), parts.next()) {
+            (Some(source), Some(binary), None) => (source, binary),
+            _ => return Err(String::from("Failed to parse dnf output.")),
         };
-
-        // these unwraps are safe because the length is definitely 2
-        #[allow(clippy::unwrap_used)]
-        #[allow(clippy::get_first)]
-        let source = parts.get(0).unwrap();
-        #[allow(clippy::unwrap_used)]
-        let binary = parts.get(1).unwrap();
 
         pkg_map
             .entry((*source).to_string())
@@ -185,21 +178,15 @@ pub async fn get_installation_times() -> Result<HashMap<String, DateTime<Utc>>, 
 
     let mut pkg_map: HashMap<String, DateTime<Utc>> = HashMap::new();
     for line in lines {
-        let parts: Vec<&str> = line.split('\t').collect();
+        let mut parts = line.split('\t');
 
-        if parts.len() != 2 {
-            return Err(format!("Failed to parse dnf output: {}", line));
+        let (binary, installtime) = match (parts.next(), parts.next(), parts.next()) {
+            (Some(binary), Some(installtime), None) => (binary, installtime),
+            _ => return Err(format!("Failed to parse dnf output: {}", line)),
         };
 
-        // these unwraps are safe because the length is definitely 2
-        #[allow(clippy::unwrap_used)]
-        #[allow(clippy::get_first)]
-        let binary = parts.get(0).unwrap();
-        #[allow(clippy::unwrap_used)]
-        let installtime = parts.get(1).unwrap();
-
-        let datetime = match Utc.datetime_from_str(installtime, "%Y-%m-%d %H:%M") {
-            Ok(datetime) => datetime,
+        let datetime = match NaiveDateTime::parse_from_str(installtime, "%Y-%m-%d %H:%M") {
+            Ok(datetime) => datetime.and_utc(),
             Err(error) => return Err(format!("Failed to parse dnf output: {}", error)),
         };
 

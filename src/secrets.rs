@@ -57,7 +57,7 @@ pub(crate) async fn get_store_password(clear: bool) -> Result<String, String> {
         return Ok(password);
     };
 
-    let password = match items.get(0) {
+    let password = match items.first() {
         Some(item) => match item.get_secret().await {
             Ok(secret) => match String::from_utf8(secret) {
                 Ok(valid) => valid,
