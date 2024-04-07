@@ -1,3 +1,8 @@
+# Release 2.1.4
+
+- Port from deprecated the deprecated term_size crate to terminal_size.
+- Update the env_logger dependency from 0.10 to 0.11.
+
 # Release 2.1.3
 
 - Update various dependencies.
