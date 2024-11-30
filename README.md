@@ -1,4 +1,8 @@
-# fedora-update-feedback
+# fedora-update-feedback (DEPRECATED)
+
+> [!WARNING]
+> This application no longer works as of bodhi-server 8.0.0 due to breaking
+> changes to / removal of the OpenID authentication endpoint.
 
 [![crates.io](https://img.shields.io/crates/v/fedora-update-feedback.svg)](https://crates.io/crates/fedora-update-feedback/)
 [![crates.io](https://img.shields.io/crates/d/fedora-update-feedback.svg)](https://crates.io/crates/fedora-update-feedback/)
